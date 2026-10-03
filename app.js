@@ -38,6 +38,9 @@ const STR = {
     yourFlights:(n,o)=>`${n} of your flights here${o ? ` · ${o} over the height limit` : ''}`,
     welcome:'Welcome', welcomeText:'Your logbook lives only on this phone — nothing is uploaded. Set yourself up and log your first flight.',
     start2:'Start', feedback:'Send feedback', droneOptional:'Your drone (optional)', autoCountry:'auto from GPS',
+    weather:'Weather', observer:'Observer', incident:'Incidents / remarks', credentialNo:'Pilot credential #',
+    weatherPh:'e.g. clear, wind 10 km/h', observerPh:'name, if any', end:'End', aircraftReg:'Aircraft reg.',
+    workType:'Type of work', cyclesUsed:'Cycles', logTitle:'Flight log', date:'Date',
   },
   es: {
     appName:'Bitácora de Vuelo', tabLog:'Bitácora', tabMap:'Mapa', tabFleet:'Flota', tabMore:'Más',
@@ -74,6 +77,9 @@ const STR = {
     yourFlights:(n,o)=>`${n} de tus vuelos aquí${o ? ` · ${o} sobre el límite de altura` : ''}`,
     welcome:'Bienvenido', welcomeText:'Tu bitácora vive solo en este teléfono — nada se sube a internet. Configura tu perfil y registra tu primer vuelo.',
     start2:'Comenzar', feedback:'Enviar comentarios', droneOptional:'Tu dron (opcional)', autoCountry:'automático por GPS',
+    weather:'Clima', observer:'Observador RPAS', incident:'Incidentes / observaciones', credentialNo:'N° credencial del piloto',
+    weatherPh:'ej. despejado, viento 10 km/h', observerPh:'nombre, si hubo', end:'Término', aircraftReg:'Registro aeronave',
+    workType:'Tipo de trabajo', cyclesUsed:'Ciclos', logTitle:'Bitácora de vuelo', date:'Fecha',
   }
 };
 const t = (k, ...a) => { const v = (STR[state.settings.lang] || STR.en)[k] ?? STR.en[k] ?? k; return typeof v === 'function' ? v(...a) : v; };
@@ -106,6 +112,9 @@ function migrate() {
     state.checklists = { US: state.checklist || RULES.US.checklist[lang], CL: RULES.CL.checklist[lang] };
     delete state.checklist;
   }
+  // The first Chile checklist said "2 km" from aerodromes; swap in the stricter wording.
+  const cl = state.checklists.CL || [], i = cl.findIndex(x => /^(Not near an aerodrome|Lejos de aeródromos) \(2 km\)$/.test(x));
+  if (i >= 0) cl.splice(i, 1, ...RULES.CL.checklist[/^Lejos/.test(cl[i]) ? 'es' : 'en'].slice(0, 2));
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} }
 
@@ -284,6 +293,10 @@ const typeLabel = f => f.type === 'Part 107' ? L10(ruleOf(f).proLabel) : t('recr
 const heightTxt = (m, c) => RULES[c].heightUnit === 'ft' ? `${Math.round(m * 3.281)} ft` : `${Math.round(m)} m`;
 const overLimit = f => f.maxHeightM > ruleOf(f).maxHeightM;
 const checklistFor = c => state.checklists[c] || [];
+// The pilot's credential number for a country, taken from the first document in its rule pack.
+const credFor = c => state.docs[c + ':' + RULES[c].docs[0].key]?.number || '';
+const cyclesOf = f => Object.values(f.batteryUses || {}).reduce((a, n) => a + n, 0) || (f.batteryIds || []).length;
+const endOf = f => f.airMin != null ? new Date(Date.parse(f.start) + f.airMin * 6e4) : null;
 function docStatus(d) {
   if (!d?.expires) return ['none', t('docNone')];
   const days = Math.ceil((Date.parse(d.expires) - Date.now()) / 864e5);
@@ -450,6 +463,7 @@ function flightDialog(f) {
   const isNew = !f;
   f = f || { start: new Date().toISOString(), type: 'Recreational', airMin: null, batteryIds: [], droneId: state.drones[0]?.id || '', country: home() };
   const R = ruleOf(f), checks = checklistFor(countryOf(f));
+  if (isNew) f.credential = credFor(countryOf(f));
   const opt = (v, l, sel) => `<option value="${esc(v)}" ${sel ? 'selected' : ''}>${esc(l)}</option>`;
   openDialog(`<h3>${t(isNew ? 'newFlight' : 'editFlight')}</h3>
     ${f.source === 'autopylot' ? `<div class="note" style="margin:0 0 4px">${t('fromAP')}${f.plannedMin ? ` · ${f.plannedMin} ${t('min')} ${t('planned')}` : ''}</div>` : ''}
@@ -468,10 +482,14 @@ function flightDialog(f) {
     <button type="button" class="btn small" id="gps" style="margin-top:8px">${t('useGps')}</button>
     <div class="grid2"><div><label>${esc(L10(R.authLabel))}</label><input name="laanc" class="mono" value="${esc(f.laanc)}"></div>
       <div><label>${t('airspace')}</label><input name="airspace" value="${esc(f.airspace)}"></div></div>
+    <div class="grid2"><div><label>${t('weather')}</label><input name="weather" placeholder="${esc(t('weatherPh'))}" value="${esc(f.weather)}"></div>
+      <div><label>${t('observer')}</label><input name="observer" placeholder="${esc(t('observerPh'))}" value="${esc(f.observer)}"></div></div>
+    <label>${t('credentialNo')}</label><input name="credential" class="mono" value="${esc(f.credential)}">
     ${state.batteries.length ? `<label>${t('batteries')}</label><div class="checks">${state.batteries.map(b =>
       `<label><input type="checkbox" name="bat" value="${b.id}" ${(f.batteryIds || []).includes(b.id) ? 'checked' : ''}>${esc(b.label)}</label>`).join('')}</div>` : ''}
     ${isNew && checks.length ? `<label>${t('checklist')} ${R.flag}</label><div class="checks">${checks.map((c, i) =>
       `<label><input type="checkbox" name="chk" value="${i}">${esc(c)}</label>`).join('')}</div>` : ''}
+    <label>${t('incident')}</label><textarea name="incident">${esc(f.incident)}</textarea>
     <label>${t('notes')}</label><textarea name="notes">${esc(f.notes)}</textarea>`,
   fd => {
     const num = v => (v === '' || v == null || isNaN(+v)) ? null : +v;
@@ -480,7 +498,9 @@ function flightDialog(f) {
       droneId: fd.get('droneId'), name: fd.get('name').trim(), location: fd.get('location').trim(),
       lat: num(fd.get('lat')), lng: num(fd.get('lng')), laanc: fd.get('laanc').trim(), airspace: fd.get('airspace').trim(),
       batteryIds: fd.getAll('bat'), notes: fd.get('notes').trim(),
+      weather: fd.get('weather').trim(), observer: fd.get('observer').trim(), credential: fd.get('credential').trim(), incident: fd.get('incident').trim(),
     });
+    if (f.batteryUses) f.batteryUses = Object.fromEntries(Object.entries(f.batteryUses).filter(([k]) => f.batteryIds.includes(k)));
     if (isNew) { f.id = uid(); f.source = 'manual'; f.checklist = `${fd.getAll('chk').length}/${checks.length}`; state.flights.push(f); }
   },
   isNew ? null : () => { if (!confirm(t('confirmDel'))) return false; state.flights = state.flights.filter(x => x.id !== f.id); return true; });
@@ -513,12 +533,17 @@ function batteryDialog(b) {
 
 // ---------- export ----------
 function exportCSV() {
-  const cols = ['Date', 'Start', 'Air time (min)', 'Type', 'Purpose', 'Location', 'Lat', 'Lng', 'Drone', 'LAANC', 'Airspace', 'Notes', 'Source', 'Status'];
+  const cols = ['Date', 'Start', 'End', 'Air time (min)', 'Country', 'Type', 'Purpose', 'Location', 'Lat', 'Lng', 'Drone', 'Aircraft reg', 'Batteries', 'Cycles',
+    'Pilot', 'Credential', 'Authorization', 'Airspace', 'Weather', 'Observer', 'Incidents', 'Max height (m)', 'Notes', 'Source', 'Status'];
   const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const lines = [cols.map(q).join(',')].concat(sorted().map(f => {
     const d = new Date(f.start);
-    return [d.toLocaleDateString('en-CA'), d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), f.airMin ?? '', f.type, f.name,
-      f.location, f.lat, f.lng, state.drones.find(x => x.id === f.droneId)?.name, f.laanc, f.airspace, f.notes, f.source, flown(f) ? 'Flown' : 'Not flown'].map(q).join(',');
+    const hm = x => x ? x.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+    const dr = state.drones.find(x => x.id === f.droneId);
+    const bats = (f.batteryIds || []).map(id => state.batteries.find(b => b.id === id)?.label).filter(Boolean).join(' / ');
+    return [d.toLocaleDateString('en-CA'), hm(d), hm(endOf(f)), f.airMin ?? '', countryOf(f), typeLabel(f), f.name, f.location, f.lat, f.lng,
+      dr?.name, dr?.reg, bats, cyclesOf(f), state.settings.pilot, f.credential, f.laanc, f.airspace, f.weather, f.observer, f.incident,
+      f.maxHeightM ?? '', f.notes, f.source, flown(f) ? 'Flown' : 'Not flown'].map(q).join(',');
   }));
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
@@ -526,10 +551,19 @@ function exportCSV() {
   a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 function printLog() {
-  const rows = sorted().map(f => { const d = new Date(f.start);
-    return `<tr><td>${d.toLocaleDateString(loc())}</td><td>${d.toLocaleTimeString(loc(), { hour: 'numeric', minute: '2-digit' })}</td><td>${f.airMin ?? '—'}</td><td>${esc(typeLabel(f))}</td><td>${esc(f.location)}</td><td>${esc(state.drones.find(x => x.id === f.droneId)?.name || '')}</td><td>${esc(f.laanc)}</td></tr>`; }).join('');
-  $('#print').innerHTML = `<h2>${t('appName')} — ${esc(state.settings.pilot)}</h2><p>${state.flights.length} ${t('flightsShort')} · ${new Date().toLocaleDateString(loc())}</p>
-    <table><thead><tr><th>Date</th><th>${t('start')}</th><th>${t('min')}</th><th>${t('type')}</th><th>${t('location')}</th><th>${t('drone')}</th><th>${t('authShort')}</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const tm = x => x ? x.toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' }) : '—';
+  const rows = sorted().filter(flown).map(f => { const d = new Date(f.start), dr = state.drones.find(x => x.id === f.droneId);
+    const bats = (f.batteryIds || []).map(id => state.batteries.find(b => b.id === id)?.label).filter(Boolean).join(', ');
+    return `<tr><td>${d.toLocaleDateString(loc())}</td><td>${tm(d)}</td><td>${tm(endOf(f))}</td><td>${f.airMin ?? '—'}</td>
+      <td>${esc(f.credential || '')}</td><td>${esc([dr?.name, dr?.reg].filter(Boolean).join(' · '))}</td><td>${esc(bats)}</td><td>${cyclesOf(f) || ''}</td>
+      <td>${esc(shortLoc(f.location) || '')}${f.lat != null ? `<br>${f.lat.toFixed(5)}, ${f.lng.toFixed(5)}` : ''}</td>
+      <td>${esc(typeLabel(f))}${f.name ? ' — ' + esc(f.name) : ''}</td><td>${esc(f.laanc || '')}</td><td>${esc(f.weather || '')}</td>
+      <td>${esc(f.observer || '')}</td><td>${esc(f.incident || '')}</td></tr>`; }).join('');
+  $('#print').innerHTML = `<h2>${t('logTitle')} — ${esc(state.settings.pilot)}</h2>
+    <p>${state.flights.filter(flown).length} ${t('flightsShort')} · ${new Date().toLocaleDateString(loc())}</p>
+    <table><thead><tr><th>${t('date')}</th><th>${t('start')}</th><th>${t('end')}</th><th>${t('min')}</th>
+      <th>${t('credentialNo')}</th><th>${t('aircraftReg')}</th><th>${t('batteries')}</th><th>${t('cyclesUsed')}</th><th>${t('location')}</th>
+      <th>${t('workType')}</th><th>${t('authShort')}</th><th>${t('weather')}</th><th>${t('observer')}</th><th>${t('incident')}</th></tr></thead><tbody>${rows}</tbody></table>`;
   window.print();
 }
 

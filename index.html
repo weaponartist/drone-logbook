@@ -103,8 +103,9 @@ ul.rules li{margin:6px 0}
 #print{display:none}
 @media print{
   header,main,nav,.fab{display:none!important}
+  @page{size:landscape;margin:10mm}
   #print{display:block;color:#000;font-family:Inter,sans-serif}
-  #print table{width:100%;border-collapse:collapse;font-size:10px}
+  #print table{width:100%;border-collapse:collapse;font-size:8.5px}
   #print th,#print td{border-bottom:1px solid #ccc;padding:4px;text-align:left}
 }
 </style>
