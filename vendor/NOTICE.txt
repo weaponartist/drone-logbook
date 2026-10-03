@@ -1,0 +1,2 @@
+dji_log_parser_js.mjs — dji-log-parser-js 0.5.7 by Luc Vauvillier, MIT License
+https://github.com/lvauvillier/dji-log-parser
