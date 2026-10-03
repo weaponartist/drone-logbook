@@ -96,6 +96,10 @@ textarea{min-height:70px;resize:vertical}
 .dlg-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
 .dlg-actions .spacer{flex:1}
 .empty{text-align:center;color:var(--muted);padding:40px 0}
+ul.rules{margin:4px 0 10px;padding-left:18px;line-height:1.5}
+ul.rules li{margin:6px 0}
+.box a{color:var(--accent)}
+.doc-ok{color:var(--accent)}.doc-soon{color:var(--warn)}.doc-bad{color:var(--danger);font-weight:600}
 #print{display:none}
 @media print{
   header,main,nav,.fab{display:none!important}
@@ -134,13 +138,17 @@ textarea{min-height:70px;resize:vertical}
       <div class="btns" style="margin-top:10px"><button class="btn small" id="addBattery" data-t="addBattery">+ Add battery</button></div></section>
   </div>
 
+  <div class="view" id="v-rules"></div>
+
   <div class="view" id="v-more">
     <section class="box"><h3 data-t="settings">Settings</h3>
       <label data-t="pilot">Pilot in command</label><input id="setPilot">
       <label data-t="language">Language</label>
       <select id="setLang"><option value="en">English</option><option value="es">Español</option></select>
+      <label data-t="country">Home country</label>
+      <select id="setCountry"><option value="CL">🇨🇱 Chile</option><option value="US">🇺🇸 United States</option></select>
     </section>
-    <section class="box"><h3 data-t="checklist">Pre-flight checklist</h3><div id="checkItems"></div>
+    <section class="box"><h3 id="checkTitle">Pre-flight checklist</h3><div id="checkItems"></div>
       <div style="display:flex;gap:8px;margin-top:10px"><input id="newCheck" data-tp="newCheck"><button class="btn small" id="addCheck">+</button></div></section>
     <section class="box"><h3 data-t="data">Import &amp; export</h3>
       <div class="btns">
@@ -153,6 +161,7 @@ textarea{min-height:70px;resize:vertical}
       </div>
       <p class="note" style="margin:12px 0 0" id="importMsg" hidden></p>
     </section>
+    <section class="box"><a class="btn" id="feedback" href="#" style="display:inline-block;text-decoration:none" data-t="feedback">Send feedback</a></section>
     <section class="box"><h3 data-t="danger">Danger zone</h3>
       <button class="btn danger" id="resetAll" data-t="reset">Erase all data</button></section>
   </div>
@@ -164,6 +173,7 @@ textarea{min-height:70px;resize:vertical}
   <button class="on" data-view="log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><span data-t="tabLog">Log</span></button>
   <button data-view="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg><span data-t="tabMap">Map</span></button>
   <button data-view="fleet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="5" r="2.5"/><circle cx="19" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M7 7l3 3M17 7l-3 3M7 17l3-3M17 17l-3-3"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg><span data-t="tabFleet">Fleet</span></button>
+  <button data-view="rules"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><span data-t="tabRules">Rules</span></button>
   <button data-view="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg><span data-t="tabMore">More</span></button>
 </nav>
 
@@ -171,6 +181,7 @@ textarea{min-height:70px;resize:vertical}
 <div id="print"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="rules.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

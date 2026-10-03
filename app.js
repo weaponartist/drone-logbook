@@ -26,9 +26,18 @@ const STR = {
     djiImported:(m,n,s,g)=>`DJI logs: ${m} flights got real air time, ${n} new flights added, ${s} already imported, ${g} power-on/ground logs ignored.`,
     djiLine:(n,km,h,v)=>`DJI: ${n} log${n>1?'s':''} · ${km} km · max ${h} m (${Math.round(h*3.281)} ft) · top ${v} m/s`,
     over400:'over 400 ft', notFlown:'Not flown', flown:'Flown', status:'Status', noLog:'no DJI log',
-    noLogHint:'Your drone logged flights in the weeks around this date, but nothing on this day. If you cancelled, mark it as not flown — the LAANC approval stays on record.',
+    noLogHint:'Your drone logged flights in the weeks around this date, but nothing on this day. If you cancelled, mark it as not flown — any approval code stays on record.',
     markNotFlown:'Mark not flown', backup:'Download backup', restore:'Restore backup',
     restored:(n)=>`Restored ${n} flights from backup.`, confirmRestore:'Replace everything on this device with the backup?', badBackup:'That file is not a logbook backup.',
+    tabRules:'Rules', auths:'Airspace approvals', pro:'Professional', authShort:'Approval', country:'Home country',
+    overLimit:(l)=>`over the ${l} limit`, airNoteManual:(n)=>`<b>${n} flights have no air time yet.</b> Open each one and add the minutes.`,
+    rulesIntro:'Plain-language summary to help you plan — not legal advice. Always confirm with the authority before flying.',
+    checked:(d)=>`Last checked ${d}`, sources:'Sources', docs:'My documents', expires:'Expires', number:'Number',
+    docOk:(d)=>`valid · ${d} days left`, docSoon:(d)=>`expires in ${d} days`, docExpired:'expired', docNone:'no date set',
+    docAlert:(n)=>`<b>${n} document${n>1?'s':''} expiring soon or expired.</b> Check the Rules tab.`,
+    yourFlights:(n,o)=>`${n} of your flights here${o ? ` · ${o} over the height limit` : ''}`,
+    welcome:'Welcome', welcomeText:'Your logbook lives only on this phone — nothing is uploaded. Set yourself up and log your first flight.',
+    start2:'Start', feedback:'Send feedback', droneOptional:'Your drone (optional)', autoCountry:'auto from GPS',
   },
   es: {
     appName:'Bitácora de Vuelo', tabLog:'Bitácora', tabMap:'Mapa', tabFleet:'Flota', tabMore:'Más',
@@ -53,9 +62,18 @@ const STR = {
     djiImported:(m,n,s,g)=>`Registros DJI: ${m} vuelos recibieron tiempo real, ${n} vuelos nuevos, ${s} ya importados, ${g} registros en tierra ignorados.`,
     djiLine:(n,km,h,v)=>`DJI: ${n} registro${n>1?'s':''} · ${km} km · máx ${h} m (${Math.round(h*3.281)} ft) · máx ${v} m/s`,
     over400:'sobre 400 ft', notFlown:'No volado', flown:'Volado', status:'Estado', noLog:'sin registro DJI',
-    noLogHint:'Tu dron registró vuelos en las semanas cercanas, pero nada este día. Si lo cancelaste, márcalo como no volado — la autorización LAANC queda registrada.',
+    noLogHint:'Tu dron registró vuelos en las semanas cercanas, pero nada este día. Si lo cancelaste, márcalo como no volado — el código de autorización queda registrado.',
     markNotFlown:'Marcar no volado', backup:'Descargar respaldo', restore:'Restaurar respaldo',
     restored:(n)=>`Se restauraron ${n} vuelos.`, confirmRestore:'¿Reemplazar todo en este dispositivo con el respaldo?', badBackup:'Ese archivo no es un respaldo de la bitácora.',
+    tabRules:'Normas', auths:'Autorizaciones', pro:'Profesional', authShort:'Autorización', country:'País principal',
+    overLimit:(l)=>`sobre el límite de ${l}`, airNoteManual:(n)=>`<b>${n} vuelos aún no tienen tiempo de vuelo.</b> Abre cada uno y agrega los minutos.`,
+    rulesIntro:'Resumen en lenguaje simple para planificar — no es asesoría legal. Confirma siempre con la autoridad antes de volar.',
+    checked:(d)=>`Revisado el ${d}`, sources:'Fuentes', docs:'Mis documentos', expires:'Vence', number:'Número',
+    docOk:(d)=>`vigente · quedan ${d} días`, docSoon:(d)=>`vence en ${d} días`, docExpired:'vencido', docNone:'sin fecha',
+    docAlert:(n)=>`<b>${n} documento${n>1?'s':''} por vencer o vencido${n>1?'s':''}.</b> Revisa la pestaña Normas.`,
+    yourFlights:(n,o)=>`${n} de tus vuelos aquí${o ? ` · ${o} sobre el límite de altura` : ''}`,
+    welcome:'Bienvenido', welcomeText:'Tu bitácora vive solo en este teléfono — nada se sube a internet. Configura tu perfil y registra tu primer vuelo.',
+    start2:'Comenzar', feedback:'Enviar comentarios', droneOptional:'Tu dron (opcional)', autoCountry:'automático por GPS',
   }
 };
 const t = (k, ...a) => { const v = (STR[state.settings.lang] || STR.en)[k] ?? STR.en[k] ?? k; return typeof v === 'function' ? v(...a) : v; };
@@ -64,16 +82,30 @@ const t = (k, ...a) => { const v = (STR[state.settings.lang] || STR.en)[k] ?? ST
 const uid = () => Math.random().toString(36).slice(2, 10);
 const DEFAULT = () => ({
   flights: [],
-  drones: [{ id: uid(), name: 'Avata', model: 'DJI Avata', serial: '', reg: '' }],
+  drones: [],
   batteries: [],
-  checklist: ['Check airspace / LAANC', 'Weather & wind OK', 'Props secure & undamaged',
-    'Batteries charged (drone + goggles)', 'SD card in, space free', 'Firmware up to date', 'Clear takeoff area'],
-  settings: { lang: (navigator.language || 'en').startsWith('es') ? 'es' : 'en', pilot: '' },
+  settings: { lang: (navigator.language || 'en').startsWith('es') ? 'es' : 'en', pilot: '', country: guessCountry() },
+  docs: {},
   seeded: false,
 });
+function guessCountry() {
+  let tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch {}
+  return tz === 'America/Santiago' || /-CL$/i.test(navigator.language || '') ? 'CL' : 'US';
+}
 let state;
 function load() {
   try { state = JSON.parse(localStorage.getItem(KEY)) || DEFAULT(); } catch { state = DEFAULT(); }
+  migrate();
+}
+// Older saves had one US checklist and no country/docs.
+function migrate() {
+  state.settings.country = state.settings.country || guessCountry();
+  state.docs = state.docs || {};
+  if (!state.checklists) {
+    const lang = state.settings.lang;
+    state.checklists = { US: state.checklist || RULES.US.checklist[lang], CL: RULES.CL.checklist[lang] };
+    delete state.checklist;
+  }
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} }
 
@@ -234,6 +266,31 @@ function noLogSuspect(f) {
   return ts.some(t => t < t0 && t0 - t < win) && ts.some(t => t > t0 && t - t0 < win);
 }
 
+// ---------- country rules ----------
+const L10 = o => o[state.settings.lang] || o.en;
+const home = () => state.settings.country;
+// No GPS fix: borrow the country of the closest-in-time flight that has one (within 7 days).
+function nearbyCountry(f) {
+  const t0 = Date.parse(f.start); let best = null, gap = 7 * 864e5;
+  for (const g of state.flights) {
+    const c = g !== f && countryAt(g.lat, g.lng), d = Math.abs(Date.parse(g.start) - t0);
+    if (c && d < gap) { best = c; gap = d; }
+  }
+  return best;
+}
+const countryOf = f => countryAt(f.lat, f.lng) || f.country || nearbyCountry(f) || home();
+const ruleOf = f => RULES[countryOf(f)];
+const typeLabel = f => f.type === 'Part 107' ? L10(ruleOf(f).proLabel) : t('recreational');
+const heightTxt = (m, c) => RULES[c].heightUnit === 'ft' ? `${Math.round(m * 3.281)} ft` : `${Math.round(m)} m`;
+const overLimit = f => f.maxHeightM > ruleOf(f).maxHeightM;
+const checklistFor = c => state.checklists[c] || [];
+function docStatus(d) {
+  if (!d?.expires) return ['none', t('docNone')];
+  const days = Math.ceil((Date.parse(d.expires) - Date.now()) / 864e5);
+  return days < 0 ? ['bad', t('docExpired')] : days <= 30 ? ['soon', t('docSoon', days)] : ['ok', t('docOk', days)];
+}
+const docAlerts = () => RULES[home()].docs.filter(d => ['bad', 'soon'].includes(docStatus(state.docs[home() + ':' + d.key])[0])).length;
+
 // ---------- render ----------
 function applyI18n() {
   document.documentElement.lang = state.settings.lang;
@@ -248,17 +305,22 @@ function renderStats() {
     [fl.length, t('flights')],
     [air ? fmtHM(air) : '—', t('airtime')],
     [dist ? `${dist.toFixed(1)} km` : '—', t('distance')],
-    [state.flights.filter(f => f.laanc).length, t('laanc')],
+    [state.flights.filter(f => f.laanc).length, t('auths')],
   ];
   $('#stats').innerHTML = cards.map(([v, l]) => `<div class="stat"><div class="v mono">${v}</div><div class="l">${esc(l)}</div></div>`).join('');
-  const missing = fl.filter(f => f.airMin == null).length;
-  $('#airNote').hidden = !missing;
-  $('#airNote').innerHTML = missing ? t('airNote', missing) : '';
+  const miss = fl.filter(f => f.airMin == null), alerts = docAlerts();
+  const notes = [];
+  if (alerts) notes.push(t('docAlert', alerts));
+  if (miss.length) notes.push(miss.some(f => f.source === 'autopylot') ? t('airNote', miss.length) : t('airNoteManual', miss.length));
+  $('#airNote').hidden = !notes.length;
+  $('#airNote').innerHTML = notes.join('<br><br>');
 }
 function renderList() {
-  $('#filters').innerHTML = [['all', t('all')], ['Recreational', t('recreational')], ['Part 107', t('part107')], ['laanc', 'LAANC'], ['cancelled', t('notFlown')]]
+  const countries = [...new Set(state.flights.map(countryOf))];
+  $('#filters').innerHTML = [['all', t('all')], ...(countries.length > 1 ? countries.map(c => ['c:' + c, `${RULES[c].flag} ${L10(RULES[c].name)}`]) : []),
+    ['Recreational', t('recreational')], ['Part 107', t('pro')], ['laanc', t('authShort')], ['cancelled', t('notFlown')]]
     .map(([k, l]) => `<button class="chip ${filter === k ? 'on' : ''}" data-f="${k}">${esc(l)}</button>`).join('');
-  const fl = sorted().filter(f => filter === 'all' || (filter === 'laanc' ? f.laanc : filter === 'cancelled' ? !flown(f) : flown(f) && f.type === filter));
+  const fl = sorted().filter(f => filter === 'all' || (filter === 'laanc' ? f.laanc : filter === 'cancelled' ? !flown(f) : filter.startsWith('c:') ? countryOf(f) === filter.slice(2) : flown(f) && f.type === filter));
   if (!fl.length) { $('#list').innerHTML = `<div class="empty">${t('noFlights')}</div>`; return; }
   let html = '', month = '';
   for (const f of fl) {
@@ -270,9 +332,9 @@ function renderList() {
       <div class="date"><div class="d mono">${d.getDate()}</div><div class="w">${d.toLocaleDateString(loc(), { weekday: 'short' })}</div></div>
       <div class="body"><div class="loc">${esc(f.name || shortLoc(f.location) || (f.lat != null ? `${f.lat.toFixed(4)}, ${f.lng.toFixed(4)}` : '—'))}</div>
         <div class="meta"><span>${d.toLocaleTimeString(loc(), { hour: 'numeric', minute: '2-digit' })}</span>
-          <span class="badge">${esc(f.type === 'Part 107' ? 'Part 107' : t('recreational'))}</span>
-          ${f.laanc ? `<span class="badge laanc mono">LAANC ${esc(f.laanc)}</span>` : ''}
-          ${f.maxHeightM > 122 ? `<span class="badge warn">↑${Math.round(f.maxHeightM * 3.281)} ft</span>` : ''}
+          <span class="badge">${ruleOf(f).flag} ${esc(typeLabel(f))}</span>
+          ${f.laanc ? `<span class="badge laanc mono">${ruleOf(f).authShort} ${esc(f.laanc)}</span>` : ''}
+          ${overLimit(f) ? `<span class="badge warn">↑${heightTxt(f.maxHeightM, countryOf(f))}</span>` : ''}
           ${drone ? `<span>${esc(drone.name)}</span>` : ''}</div></div>
       <div class="air">${!flown(f) ? `<div class="l">${t('notFlown')}</div>` : noLogSuspect(f) ? `<div class="v missing">?</div><div class="l">${t('noLog')}</div>` : f.airMin != null ? `<div class="v mono">${fmtHM(f.airMin)}</div>` : `<div class="v missing">—</div><div class="l">${t('airMissing')}</div>`}</div>
     </button>`;
@@ -293,11 +355,11 @@ function renderMap() {
     if (f.lat == null) continue;
     const isL = !!f.laanc || f.type === 'Part 107';
     L.circleMarker([f.lat, f.lng], { radius: isL ? 9 : 7, color: isL ? '#4f7a00' : '#3d4740', weight: 2, fillColor: isL ? '#9bd400' : '#7c8a80', fillOpacity: .85 })
-      .bindPopup(`<b>${esc(new Date(f.start).toLocaleDateString(loc(), { dateStyle: 'medium' }))}</b><br>${esc(f.location)}${f.laanc ? `<br>LAANC ${esc(f.laanc)}` : ''}`)
+      .bindPopup(`<b>${esc(new Date(f.start).toLocaleDateString(loc(), { dateStyle: 'medium' }))}</b><br>${esc(f.location)}${f.laanc ? `<br>${ruleOf(f).authShort} ${esc(f.laanc)}` : ''}`)
       .addTo(layer);
     pts.push([f.lat, f.lng]);
   }
-  setTimeout(() => { map.invalidateSize(); if (pts.length) map.fitBounds(pts, { padding: [30, 30], maxZoom: 14 }); else map.setView([25.65, -80.43], 11); }, 50);
+  setTimeout(() => { map.invalidateSize(); if (pts.length) map.fitBounds(pts, { padding: [30, 30], maxZoom: 14 }); else map.setView(home() === 'CL' ? [-33.45, -70.66] : [25.65, -80.43], 10); }, 50);
 }
 function renderFleet() {
   const stat = pred => { const fl = state.flights.filter(pred); return [fl.length, fl.reduce((s, f) => s + (f.airMin || 0), 0)]; };
@@ -318,13 +380,58 @@ function renderFleet() {
 function renderMore() {
   $('#setPilot').value = state.settings.pilot || '';
   $('#setLang').value = state.settings.lang;
-  $('#checkItems').innerHTML = state.checklist.map((c, i) =>
+  $('#setCountry').value = home();
+  $('#checkTitle').textContent = `${t('checklist')} ${RULES[home()].flag}`;
+  $('#checkItems').innerHTML = checklistFor(home()).map((c, i) =>
     `<div class="row"><span>${esc(c)}</span><button class="btn small" data-rm-check="${i}">${t('remove')}</button></div>`).join('');
+}
+let rulesCountry = null;
+function renderRules() {
+  const c = rulesCountry || home(), R = RULES[c];
+  const mine = state.flights.filter(f => flown(f) && countryOf(f) === c);
+  const docs = R.docs.map(d => {
+    const v = state.docs[c + ':' + d.key] || {}, [cls, txt] = docStatus(v);
+    return `<div class="row"><div style="flex:1;min-width:0"><b>${esc(L10(d))}</b>
+      <div class="sub doc-${cls}">${esc(txt)}${v.number ? ' · <span class="mono">' + esc(v.number) + '</span>' : ''}</div></div>
+      <button class="btn small" data-doc="${c}:${d.key}">✎</button></div>`;
+  }).join('');
+  $('#v-rules').innerHTML = `
+    <div class="toolbar">${Object.entries(RULES).map(([k, r]) => `<button class="chip ${k === c ? 'on' : ''}" data-rc="${k}">${r.flag} ${esc(L10(r.name))}</button>`).join('')}</div>
+    <p class="note">${esc(t('rulesIntro'))}</p>
+    <section class="box"><h3>${R.flag} ${esc(R.authority)}</h3>
+      <div class="sub" style="margin-bottom:6px">${esc(t('yourFlights', mine.length, mine.filter(overLimit).length))}</div>
+      <ul class="rules">${R.rules.map(r => `<li>${esc(L10(r))}</li>`).join('')}</ul>
+      <div class="sub">${esc(t('checked', R.checked))} · ${esc(t('sources'))}: ${R.sources.map(([l, u]) => `<a href="${u}" target="_blank" rel="noopener">${esc(l)}</a>`).join(' · ')}</div>
+    </section>
+    <section class="box"><h3>${esc(t('docs'))}</h3>${docs}</section>`;
+}
+function docDialog(key) {
+  const [c, k] = key.split(':'), d = RULES[c].docs.find(x => x.key === k), v = state.docs[key] || {};
+  openDialog(`<h3>${RULES[c].flag} ${esc(L10(d))}</h3>
+    <label>${t('number')}</label><input name="number" class="mono" value="${esc(v.number)}">
+    <label>${t('expires')}</label><input type="date" name="expires" value="${esc(v.expires)}">`,
+  fd => { state.docs[key] = { number: fd.get('number').trim(), expires: fd.get('expires') }; });
+}
+function welcomeDialog() {
+  const opt = (v, l, sel) => `<option value="${v}" ${sel ? 'selected' : ''}>${esc(l)}</option>`;
+  openDialog(`<h3>${t('welcome')} 👋</h3><p class="note" style="margin:0">${esc(t('welcomeText'))}</p>
+    <label>${t('pilot')}</label><input name="pilot" value="${esc(state.settings.pilot)}">
+    <div class="grid2"><div><label>${t('country')}</label><select name="country">${Object.entries(RULES).map(([k, r]) => opt(k, `${r.flag} ${L10(r.name)}`, k === home())).join('')}</select></div>
+      <div><label>${t('language')}</label><select name="lang">${opt('es', 'Español', state.settings.lang === 'es')}${opt('en', 'English', state.settings.lang === 'en')}</select></div></div>
+    <label>${t('droneOptional')}</label><input name="drone" placeholder="DJI Avata 2, Mini 4 Pro…">`,
+  fd => {
+    Object.assign(state.settings, { pilot: fd.get('pilot').trim(), country: fd.get('country'), lang: fd.get('lang') });
+    state.checklists = { US: RULES.US.checklist[state.settings.lang], CL: RULES.CL.checklist[state.settings.lang] };
+    const dn = fd.get('drone').trim();
+    if (dn) state.drones.push({ id: uid(), name: dn.replace(/^DJI /i, ''), model: dn, serial: '', reg: '' });
+    state.welcomed = true;
+  });
+  $('#dCancel').onclick = () => { state.welcomed = true; save(); dlg.close(); };
 }
 function renderAll() {
   applyI18n();
   $('#pilotName').textContent = state.settings.pilot || '';
-  renderStats(); renderList(); renderFleet(); renderMore();
+  renderStats(); renderList(); renderFleet(); renderMore(); renderRules();
   if (current === 'map') renderMap();
 }
 
@@ -341,15 +448,17 @@ function openDialog(html, onSave, onDelete) {
 }
 function flightDialog(f) {
   const isNew = !f;
-  f = f || { start: new Date().toISOString(), type: 'Recreational', airMin: null, batteryIds: [], droneId: state.drones[0]?.id || '' };
+  f = f || { start: new Date().toISOString(), type: 'Recreational', airMin: null, batteryIds: [], droneId: state.drones[0]?.id || '', country: home() };
+  const R = ruleOf(f), checks = checklistFor(countryOf(f));
   const opt = (v, l, sel) => `<option value="${esc(v)}" ${sel ? 'selected' : ''}>${esc(l)}</option>`;
   openDialog(`<h3>${t(isNew ? 'newFlight' : 'editFlight')}</h3>
     ${f.source === 'autopylot' ? `<div class="note" style="margin:0 0 4px">${t('fromAP')}${f.plannedMin ? ` · ${f.plannedMin} ${t('min')} ${t('planned')}` : ''}</div>` : ''}
     ${noLogSuspect(f) ? `<div class="note" style="margin:4px 0">${t('noLogHint')} <button type="button" class="btn small" id="markNF">${t('markNotFlown')}</button></div>` : ''}
-    ${f.djiLogs ? `<div class="note" style="margin:4px 0">${t('djiLine', f.djiLogs, f.distanceKm, f.maxHeightM, f.maxSpeed)}${f.maxHeightM > 122 ? ` · <b class="missing">${t('over400')}</b>` : ''}</div>` : ''}
+    ${f.djiLogs ? `<div class="note" style="margin:4px 0">${t('djiLine', f.djiLogs, f.distanceKm, f.maxHeightM, f.maxSpeed)}${overLimit(f) ? ` · <b class="missing">${t('overLimit', heightTxt(R.maxHeightM, countryOf(f)))}</b>` : ''}</div>` : ''}
+    ${isNew ? `<div class="note" style="margin:4px 0">${R.flag} ${esc(L10(R.summary))}</div>` : ''}
     <div class="grid2"><div><label>${t('start')}</label><input type="datetime-local" name="start" value="${toLocalInput(f.start)}" required></div>
       <div><label>${t('airMin')}</label><input type="number" name="airMin" min="0" step="1" inputmode="numeric" value="${f.airMin ?? ''}"></div></div>
-    <div class="grid2"><div><label>${t('type')}</label><select name="type">${opt('Recreational', t('recreational'), f.type !== 'Part 107')}${opt('Part 107', 'Part 107', f.type === 'Part 107')}</select></div>
+    <div class="grid2"><div><label>${t('type')}</label><select name="type">${opt('Recreational', t('recreational'), f.type !== 'Part 107')}${opt('Part 107', L10(R.proLabel), f.type === 'Part 107')}</select></div>
       <div><label>${t('drone')}</label><select name="droneId">${opt('', t('none'), !f.droneId)}${state.drones.map(d => opt(d.id, d.name, d.id === f.droneId)).join('')}</select></div></div>
     <label>${t('status')}</label><select name="status">${opt('', t('flown'), flown(f))}${opt('cancelled', t('notFlown'), !flown(f))}</select>
     <label>${t('purpose')}</label><input name="name" value="${esc(f.name)}">
@@ -357,11 +466,11 @@ function flightDialog(f) {
     <div class="grid2"><div><label>${t('lat')}</label><input name="lat" inputmode="decimal" value="${f.lat ?? ''}"></div>
       <div><label>${t('lng')}</label><input name="lng" inputmode="decimal" value="${f.lng ?? ''}"></div></div>
     <button type="button" class="btn small" id="gps" style="margin-top:8px">${t('useGps')}</button>
-    <div class="grid2"><div><label>${t('laancCode')}</label><input name="laanc" class="mono" value="${esc(f.laanc)}"></div>
+    <div class="grid2"><div><label>${esc(L10(R.authLabel))}</label><input name="laanc" class="mono" value="${esc(f.laanc)}"></div>
       <div><label>${t('airspace')}</label><input name="airspace" value="${esc(f.airspace)}"></div></div>
     ${state.batteries.length ? `<label>${t('batteries')}</label><div class="checks">${state.batteries.map(b =>
       `<label><input type="checkbox" name="bat" value="${b.id}" ${(f.batteryIds || []).includes(b.id) ? 'checked' : ''}>${esc(b.label)}</label>`).join('')}</div>` : ''}
-    ${isNew && state.checklist.length ? `<label>${t('checklist')}</label><div class="checks">${state.checklist.map((c, i) =>
+    ${isNew && checks.length ? `<label>${t('checklist')} ${R.flag}</label><div class="checks">${checks.map((c, i) =>
       `<label><input type="checkbox" name="chk" value="${i}">${esc(c)}</label>`).join('')}</div>` : ''}
     <label>${t('notes')}</label><textarea name="notes">${esc(f.notes)}</textarea>`,
   fd => {
@@ -372,7 +481,7 @@ function flightDialog(f) {
       lat: num(fd.get('lat')), lng: num(fd.get('lng')), laanc: fd.get('laanc').trim(), airspace: fd.get('airspace').trim(),
       batteryIds: fd.getAll('bat'), notes: fd.get('notes').trim(),
     });
-    if (isNew) { f.id = uid(); f.source = 'manual'; f.checklist = `${fd.getAll('chk').length}/${state.checklist.length}`; state.flights.push(f); }
+    if (isNew) { f.id = uid(); f.source = 'manual'; f.checklist = `${fd.getAll('chk').length}/${checks.length}`; state.flights.push(f); }
   },
   isNew ? null : () => { if (!confirm(t('confirmDel'))) return false; state.flights = state.flights.filter(x => x.id !== f.id); return true; });
   const nf = $('#markNF'); if (nf) nf.onclick = () => { form.status.value = 'cancelled'; form.requestSubmit(); };
@@ -386,7 +495,7 @@ function droneDialog(d) {
     <label>${t('name')}</label><input name="name" value="${esc(d.name)}" required>
     <label>${t('model')}</label><input name="model" value="${esc(d.model)}">
     <div class="grid2"><div><label>${t('serial')}</label><input name="serial" class="mono" value="${esc(d.serial)}"></div>
-      <div><label>${t('reg')}</label><input name="reg" class="mono" value="${esc(d.reg)}"></div></div>`,
+      <div><label>${esc(L10(RULES[home()].regLabel))}</label><input name="reg" class="mono" value="${esc(d.reg)}"></div></div>`,
   fd => { Object.assign(d, { name: fd.get('name').trim(), model: fd.get('model').trim(), serial: fd.get('serial').trim(), reg: fd.get('reg').trim() });
     if (isNew) { d.id = uid(); state.drones.push(d); } },
   isNew ? null : () => { state.drones = state.drones.filter(x => x.id !== d.id); state.flights.forEach(f => { if (f.droneId === d.id) f.droneId = ''; }); return true; });
@@ -418,9 +527,9 @@ function exportCSV() {
 }
 function printLog() {
   const rows = sorted().map(f => { const d = new Date(f.start);
-    return `<tr><td>${d.toLocaleDateString(loc())}</td><td>${d.toLocaleTimeString(loc(), { hour: 'numeric', minute: '2-digit' })}</td><td>${f.airMin ?? '—'}</td><td>${esc(f.type)}</td><td>${esc(f.location)}</td><td>${esc(state.drones.find(x => x.id === f.droneId)?.name || '')}</td><td>${esc(f.laanc)}</td></tr>`; }).join('');
+    return `<tr><td>${d.toLocaleDateString(loc())}</td><td>${d.toLocaleTimeString(loc(), { hour: 'numeric', minute: '2-digit' })}</td><td>${f.airMin ?? '—'}</td><td>${esc(typeLabel(f))}</td><td>${esc(f.location)}</td><td>${esc(state.drones.find(x => x.id === f.droneId)?.name || '')}</td><td>${esc(f.laanc)}</td></tr>`; }).join('');
   $('#print').innerHTML = `<h2>${t('appName')} — ${esc(state.settings.pilot)}</h2><p>${state.flights.length} ${t('flightsShort')} · ${new Date().toLocaleDateString(loc())}</p>
-    <table><thead><tr><th>Date</th><th>${t('start')}</th><th>${t('min')}</th><th>${t('type')}</th><th>${t('location')}</th><th>${t('drone')}</th><th>LAANC</th></tr></thead><tbody>${rows}</tbody></table>`;
+    <table><thead><tr><th>Date</th><th>${t('start')}</th><th>${t('min')}</th><th>${t('type')}</th><th>${t('location')}</th><th>${t('drone')}</th><th>${t('authShort')}</th></tr></thead><tbody>${rows}</tbody></table>`;
   window.print();
 }
 
@@ -443,8 +552,13 @@ $('#drones').onclick = e => { const b = e.target.closest('[data-edit-drone]'); i
 $('#batteries').onclick = e => { const b = e.target.closest('[data-edit-battery]'); if (b) batteryDialog(state.batteries.find(x => x.id === b.dataset.editBattery)); };
 $('#setPilot').onchange = e => { state.settings.pilot = e.target.value.trim(); save(); renderAll(); };
 $('#setLang').onchange = e => { state.settings.lang = e.target.value; save(); renderAll(); };
-$('#addCheck').onclick = () => { const v = $('#newCheck').value.trim(); if (v) { state.checklist.push(v); $('#newCheck').value = ''; save(); renderMore(); } };
-$('#checkItems').onclick = e => { const b = e.target.closest('[data-rm-check]'); if (b) { state.checklist.splice(+b.dataset.rmCheck, 1); save(); renderMore(); } };
+$('#setCountry').onchange = e => { state.settings.country = e.target.value; rulesCountry = null; save(); renderAll(); };
+$('#addCheck').onclick = () => { const v = $('#newCheck').value.trim(); if (v) { (state.checklists[home()] ||= []).push(v); $('#newCheck').value = ''; save(); renderMore(); } };
+$('#checkItems').onclick = e => { const b = e.target.closest('[data-rm-check]'); if (b) { state.checklists[home()].splice(+b.dataset.rmCheck, 1); save(); renderMore(); } };
+$('#v-rules').onclick = e => {
+  const rc = e.target.closest('[data-rc]'); if (rc) { rulesCountry = rc.dataset.rc; renderRules(); }
+  const d = e.target.closest('[data-doc]'); if (d) docDialog(d.dataset.doc);
+};
 $('#importFile').onchange = async e => {
   const file = e.target.files[0]; if (!file) return;
   const [n, s] = importAutoPylot(await file.text());
@@ -470,11 +584,16 @@ $('#restoreFile').onchange = async e => {
   let b; try { b = JSON.parse(await file.text()); } catch {}
   if (b?.app !== 'drone-logbook' || !Array.isArray(b.state?.flights)) { alert(t('badBackup')); return; }
   if (state.flights.length && !confirm(t('confirmRestore'))) return;
-  state = { ...DEFAULT(), ...b.state, seeded: true }; save(); renderAll();
+  state = { ...DEFAULT(), ...b.state, seeded: true, welcomed: true }; migrate(); save(); renderAll();
   $('#importMsg').hidden = false; $('#importMsg').textContent = t('restored', state.flights.length);
 };
 $('#printLog').onclick = printLog;
-$('#resetAll').onclick = () => { if (confirm(t('confirmReset'))) { state = DEFAULT(); state.seeded = true; save(); renderAll(); } };
+$('#feedback').onclick = e => {
+  e.preventDefault();
+  const subj = encodeURIComponent(`${t('appName')} — ${t('feedback')}`);
+  location.href = `mailto:manny@weaponartist.studio?subject=${subj}`;
+};
+$('#resetAll').onclick = () => { if (confirm(t('confirmReset'))) { state = DEFAULT(); migrate(); state.seeded = true; save(); renderAll(); welcomeDialog(); } };
 
 // ---------- boot ----------
 (async function boot() {
@@ -492,6 +611,9 @@ $('#resetAll').onclick = () => { if (confirm(t('confirmReset'))) { state = DEFAU
     const r = await fetch('data/dji_details.json', { cache: 'no-store' });
     if (r.ok) importDJI(await r.json());
   } catch {}
+  if (state.flights.length) state.welcomed = true;
+  save();
   renderAll();
+  if (!state.welcomed) welcomeDialog();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
