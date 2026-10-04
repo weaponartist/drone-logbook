@@ -278,9 +278,9 @@ function noLogSuspect(f) {
 // ---------- country rules ----------
 const L10 = o => o[state.settings.lang] || o.en;
 const home = () => state.settings.country;
-// No GPS fix: borrow the country of the closest-in-time flight that has one (within 7 days).
+// No GPS fix: borrow the country of the closest-in-time flight that has one (within 14 days).
 function nearbyCountry(f) {
-  const t0 = Date.parse(f.start); let best = null, gap = 7 * 864e5;
+  const t0 = Date.parse(f.start); let best = null, gap = 14 * 864e5;
   for (const g of state.flights) {
     const c = g !== f && countryAt(g.lat, g.lng), d = Math.abs(Date.parse(g.start) - t0);
     if (c && d < gap) { best = c; gap = d; }
