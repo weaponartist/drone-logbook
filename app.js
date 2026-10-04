@@ -75,7 +75,7 @@ const STR = {
     docOk:(d)=>`vigente · quedan ${d} días`, docSoon:(d)=>`vence en ${d} días`, docExpired:'vencido', docNone:'sin fecha',
     docAlert:(n)=>`<b>${n} documento${n>1?'s':''} por vencer o vencido${n>1?'s':''}.</b> Revisa la pestaña Normas.`,
     yourFlights:(n,o)=>`${n} de tus vuelos aquí${o ? ` · ${o} sobre el límite de altura` : ''}`,
-    welcome:'Bienvenido', welcomeText:'Tu bitácora vive solo en este teléfono — nada se sube a internet. Configura tu perfil y registra tu primer vuelo.',
+    welcome:'¡Hola!', welcomeText:'Tu bitácora vive solo en este teléfono — nada se sube a internet. Configura tu perfil y registra tu primer vuelo.',
     start2:'Comenzar', feedback:'Enviar comentarios', droneOptional:'Tu dron (opcional)', autoCountry:'automático por GPS',
     weather:'Clima', observer:'Observador RPAS', incident:'Incidentes / observaciones', credentialNo:'N° credencial del piloto',
     weatherPh:'ej. despejado, viento 10 km/h', observerPh:'nombre, si hubo', end:'Término', aircraftReg:'Registro aeronave',
