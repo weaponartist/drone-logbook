@@ -1,6 +1,6 @@
 {
-  "name": "Drone Logbook",
-  "short_name": "Logbook",
+  "name": "Bitácora de Vuelo · Drone Logbook",
+  "short_name": "Bitácora",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#0f1412",
@@ -22,5 +22,6 @@
       "sizes": "any",
       "type": "image/svg+xml"
     }
-  ]
+  ],
+  "lang": "es-CL"
 }
