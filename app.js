@@ -324,6 +324,7 @@ function renderStats() {
   const miss = fl.filter(f => f.airMin == null), alerts = docAlerts();
   const notes = [];
   if (alerts) notes.push(t('docAlert', alerts));
+  if (window.authAlerts) notes.push(...authAlerts());
   if (miss.length) notes.push(miss.some(f => f.source === 'autopylot') ? t('airNote', miss.length) : t('airNoteManual', miss.length));
   $('#airNote').hidden = !notes.length;
   $('#airNote').innerHTML = notes.join('<br><br>');
@@ -416,7 +417,8 @@ function renderRules() {
       <ul class="rules">${R.rules.map(r => `<li>${esc(L10(r))}</li>`).join('')}</ul>
       <div class="sub">${esc(t('checked', R.checked))} · ${esc(t('sources'))}: ${R.sources.map(([l, u]) => `<a href="${u}" target="_blank" rel="noopener">${esc(l)}</a>`).join(' · ')}</div>
     </section>
-    <section class="box"><h3>${esc(t('docs'))}</h3>${docs}</section>`;
+    <section class="box"><h3>${esc(t('docs'))}</h3>${docs}</section>
+    ${window.authsSection ? authsSection(c) : ''}`;
 }
 function docDialog(key) {
   const [c, k] = key.split(':'), d = RULES[c].docs.find(x => x.key === k), v = state.docs[key] || {};
@@ -482,6 +484,7 @@ function flightDialog(f) {
     <button type="button" class="btn small" id="gps" style="margin-top:8px">${t('useGps')}</button>
     <div class="grid2"><div><label>${esc(L10(R.authLabel))}</label><input name="laanc" class="mono" value="${esc(f.laanc)}"></div>
       <div><label>${t('airspace')}</label><input name="airspace" value="${esc(f.airspace)}"></div></div>
+    ${window.authSelect ? authSelect(f) : ''}
     <div class="grid2"><div><label>${t('weather')}</label><input name="weather" placeholder="${esc(t('weatherPh'))}" value="${esc(f.weather)}"></div>
       <div><label>${t('observer')}</label><input name="observer" placeholder="${esc(t('observerPh'))}" value="${esc(f.observer)}"></div></div>
     <label>${t('credentialNo')}</label><input name="credential" class="mono" value="${esc(f.credential)}">
@@ -498,8 +501,11 @@ function flightDialog(f) {
       droneId: fd.get('droneId'), name: fd.get('name').trim(), location: fd.get('location').trim(),
       lat: num(fd.get('lat')), lng: num(fd.get('lng')), laanc: fd.get('laanc').trim(), airspace: fd.get('airspace').trim(),
       batteryIds: fd.getAll('bat'), notes: fd.get('notes').trim(),
+      authId: fd.get('authId') || undefined,
       weather: fd.get('weather').trim(), observer: fd.get('observer').trim(), credential: fd.get('credential').trim(), incident: fd.get('incident').trim(),
     });
+    const au = f.authId && (state.auths || []).find(a => a.id === f.authId);
+    if (au?.number && !f.laanc) f.laanc = au.number;
     if (f.batteryUses) f.batteryUses = Object.fromEntries(Object.entries(f.batteryUses).filter(([k]) => f.batteryIds.includes(k)));
     if (isNew) { f.id = uid(); f.source = 'manual'; f.checklist = `${fd.getAll('chk').length}/${checks.length}`; state.flights.push(f); }
   },
@@ -607,9 +613,10 @@ $('#importDJI').onchange = async e => {
   e.target.value = ''; renderAll();
 };
 $('#exportCsv').onclick = exportCSV;
-$('#backup').onclick = () => {
+$('#backup').onclick = async () => {
+  const files = window.backupFiles ? await backupFiles() : {};
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify({ app: 'drone-logbook', v: 1, state }, null, 1)], { type: 'application/json' }));
+  a.href = URL.createObjectURL(new Blob([JSON.stringify({ app: 'drone-logbook', v: 1, state, files }, null, 1)], { type: 'application/json' }));
   a.download = `logbook-backup-${new Date().toISOString().slice(0, 10)}.json`;
   a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 };
@@ -618,7 +625,9 @@ $('#restoreFile').onchange = async e => {
   let b; try { b = JSON.parse(await file.text()); } catch {}
   if (b?.app !== 'drone-logbook' || !Array.isArray(b.state?.flights)) { alert(t('badBackup')); return; }
   if (state.flights.length && !confirm(t('confirmRestore'))) return;
-  state = { ...DEFAULT(), ...b.state, seeded: true, welcomed: true }; migrate(); save(); renderAll();
+  state = { ...DEFAULT(), ...b.state, seeded: true, welcomed: true }; migrate(); save();
+  if (b.files && window.restoreFiles) await restoreFiles(b.files);
+  renderAll();
   $('#importMsg').hidden = false; $('#importMsg').textContent = t('restored', state.flights.length);
 };
 $('#printLog').onclick = printLog;

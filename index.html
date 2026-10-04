@@ -101,6 +101,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12p
 input,select,textarea{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
 textarea{min-height:70px;resize:vertical}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid2>*{min-width:0}
+.sub{font-size:12px;color:var(--muted)}
 .checks label{display:flex;gap:10px;align-items:center;font-size:14px;font-weight:500;color:var(--text);margin:8px 0}
 .checks input{width:20px;height:20px;accent-color:var(--accent)}
 .dlg-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
@@ -109,6 +111,7 @@ textarea{min-height:70px;resize:vertical}
 ul.rules{margin:4px 0 10px;padding-left:18px;line-height:1.5}
 ul.rules li{margin:6px 0}
 .box a{color:var(--accent)}
+.auth-approved{color:var(--accent)}.auth-sent{color:var(--warn)}.auth-rejected{color:var(--danger)}
 .doc-ok{color:var(--accent)}.doc-soon{color:var(--warn)}.doc-bad{color:var(--danger);font-weight:600}
 #print{display:none}
 @media print{
@@ -194,5 +197,6 @@ ul.rules li{margin:6px 0}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="rules.js"></script>
 <script src="app.js"></script>
+<script src="auths.js"></script>
 </body>
 </html>
