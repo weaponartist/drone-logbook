@@ -60,6 +60,7 @@ nav.tabs button.on svg{color:var(--accent)}
 .stat .l{font-size:12px;color:var(--muted);margin-top:2px}
 .note{background:var(--surface-2);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.45}
 .note b{color:var(--text)}
+#apRow[hidden],#faaLegend[hidden]{display:none}
 .toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:99px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
 .chip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
@@ -83,10 +84,13 @@ h2.month{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(
 .fab{position:fixed;right:18px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:31;background:var(--accent);color:var(--accent-ink);border:0;border-radius:16px;padding:14px 18px;font:inherit;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.25);cursor:pointer;display:flex;gap:6px;align-items:center}
 #map{height:calc(100vh - 220px);min-height:360px;border-radius:12px;border:1px solid var(--line)}
 .legend{display:flex;gap:14px;font-size:13px;color:var(--muted);margin-bottom:10px;flex-wrap:wrap}
-#azResult,#faaResult{margin:10px 0 0;border-left:4px solid var(--line)}
-#azResult.az-in,#faaResult.az-in{border-left-color:#c0392b;color:var(--text)}
-#azResult.az-near,#faaResult.az-near{border-left-color:#d98c00;color:var(--text)}
-#azResult.az-ok,#faaResult.az-ok{border-left-color:#4f7a00;color:var(--text)}
+#azResult,#faaResult{margin:0 0 10px;border-left:4px solid var(--line)}
+#azResult.az-in,#faaResult.az-in{border-left-color:#c0392b;background:rgba(192,57,43,.16);color:var(--text)}
+#azResult.az-near,#faaResult.az-near{border-left-color:#d98c00;background:rgba(217,140,0,.16);color:var(--text)}
+#azResult.az-ok,#faaResult.az-ok{border-left-color:#4f7a00;background:rgba(79,122,0,.16);color:var(--text)}
+#azResult.az-in::before,#faaResult.az-in::before{content:"🔴 "}
+#azResult.az-near::before,#faaResult.az-near::before{content:"🟠 "}
+#azResult.az-ok::before,#faaResult.az-ok::before{content:"🟢 "}
 a.chip{text-decoration:none;display:inline-block}
 #faaLegend{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
 #faaLegend .dot{margin-left:6px}
@@ -159,13 +163,13 @@ ul.rules li{margin:6px 0}
       <span class="azLeg" hidden><span class="dot" style="background:#d98c00"></span><span data-t="azL5">5 km aerodrome zone</span></span>
       <span id="faaLegend" hidden></span>
     </div>
-    <div id="map"></div>
     <div class="note" id="azResult" hidden></div>
     <div class="note" id="faaResult" hidden></div>
-    <div class="toolbar" id="apRow" hidden style="margin:8px 0 0">
+    <div class="toolbar" id="apRow" hidden style="margin:8px 0 10px">
       <a class="chip" id="apLink" href="https://app.autopylot.io" target="_blank" rel="noopener" data-t="apOpen">Open AutoPylot</a>
       <button class="chip" id="apCopy" data-t="apCopy">Copy coordinates</button>
     </div>
+    <div id="map"></div>
     <p class="note" id="azNote" data-t="azNote"></p>
   </div>
 
