@@ -42,9 +42,18 @@ const STR = {
     weatherPh:'e.g. clear, wind 10 km/h', observerPh:'name, if any', end:'End', aircraftReg:'Aircraft reg.',
     workType:'Type of work', cyclesUsed:'Cycles', logTitle:'Flight log', date:'Date',
     azLayer:'Airport zones', azCheck:'Check my spot', azL8:'8 km airport zone', azL5:'5 km aerodrome zone',
-    azNote:'Informational only, not official. Airport zones come from airport locations (no parks or US airspace classes); US rings are approximate (5 mi). Chile P/R/D zones are transcribed from the DGAC AIP (ENR 5.1, AMDT 67, 6 Aug 2026), only those that reach the ground; dashed = approximate shape; temporary NOTAM zones are not shown. The LAANC grid is the FAA UAS Facility Map (US only): it shows the maximum altitude for automatic approval, not permission, and not TFRs, parks or other restrictions. Always confirm in the AIP/NOTAM and SIGO (Chile) or B4UFLY and your LAANC app (US). Data: OurAirports (public domain), DGAC AIP-Chile, FAA.',
+    azNote:'Informational only, not official. Airport zones come from airport locations (no parks or US airspace classes); US rings are approximate (5 mi). Chile P/R/D zones are transcribed from the DGAC AIP (ENR 5.1, AMDT 67, 6 Aug 2026), only those that reach the ground; dashed = approximate shape; temporary NOTAM zones are not shown. The LAANC grid is the FAA UAS Facility Map (US only): it shows the maximum altitude for automatic approval, not permission, and not TFRs, parks or other restrictions. Always confirm in the AIP/NOTAM and SIGO (Chile) or B4UFLY and your LAANC app (US). Protected areas: Chile from the Ministry of the Environment (MMA, CC0, 2024), simplified; US National Park Service units only. Data: OurAirports (public domain), DGAC AIP-Chile, MMA, NPS, FAA.',
     zLayer:'Chile P/R/D zones', zLP:'Prohibited (P)', zLR:'Restricted (R)', zLD:'Danger (D)', zNoData:'Chile zone data could not be loaded.',
     zKind:{ P:'prohibited', R:'restricted', D:'danger' },
+    paLayer:'Protected areas', paLNo:'Park / reserve: no drones', paLOther:'Other protected land', paNoData:'Protected area data could not be loaded.',
+    paZoom:'Zoom in to see protected areas.', paErr:'Could not load US park boundaries. It needs an internet connection.', paChecking:'Checking protected areas…',
+    paCat:{ PN:'National Park', RN:'National Reserve', MN:'Natural Monument', SN:'Nature Sanctuary', PM:'Marine Park', RM:'Marine Reserve', AMCP:'Coastal Marine Protected Area',
+      CP:'private/community conservation area', BNP:'protected state land', RF:'forest reserve', PC:'conservation landscape' },
+    paInCL:(n, c) => `Inside ${n} (${c}). Recreational drone flights are prohibited in Chile's protected areas (CONAF, DGAC DAN 91, Law 21.600). Research or management flights need CONAF authorization.`,
+    paOtherCL:(n, c) => `Inside ${n} (${c}). Not a CONAF park, but it is protected land: ask the owner or administrator before flying.`,
+    paOutCL:'Not inside a protected area in the MMA data. Boundaries are approximate (±150 m).',
+    paInUS:(n, ty) => `Inside ${n} (${ty}, National Park Service). Launching, landing or operating a drone here is prohibited without a permit from the superintendent (36 CFR 1.5).`,
+    paOutUS:'Not inside a National Park Service unit. Wildlife refuges, state parks and wilderness areas are not shown and can have their own drone bans.',
     zIn:list => `Inside ${list}. Do not fly there without DGAC authorization; check the AIP and NOTAMs.`,
     zOut:'Not inside any Chile P/R/D zone (AIP ENR 5.1, AMDT 67). Temporary NOTAM zones are not shown.',
     faaLayer:'LAANC grid', faaLeg:'LAANC max (ft):', faaZoom:'Zoom in to load the LAANC grid.', faaHint:'Tap the map to see the LAANC ceiling for a spot.',
@@ -103,9 +112,18 @@ const STR = {
     weatherPh:'ej. despejado, viento 10 km/h', observerPh:'nombre, si hubo', end:'Término', aircraftReg:'Registro aeronave',
     workType:'Tipo de trabajo', cyclesUsed:'Ciclos', logTitle:'Bitácora de vuelo', date:'Fecha',
     azLayer:'Zonas de aeropuertos', azCheck:'Revisar mi ubicación', azL8:'Zona de aeropuerto 8 km', azL5:'Zona de aeródromo 5 km',
-    azNote:'Solo informativo, no oficial. Las zonas de aeropuertos salen de la ubicación de los aeropuertos (sin parques ni clases de espacio aéreo de EE.UU.); los círculos de EE.UU. son aproximados (5 mi). Las zonas P/R/D de Chile están transcritas del AIP de la DGAC (ENR 5.1, AMDT 67, 6 ago 2026), solo las que llegan al suelo; línea punteada = forma aproximada; no se muestran zonas temporales por NOTAM. La grilla LAANC es el mapa de instalaciones UAS de la FAA (solo EE.UU.): muestra la altura máxima de aprobación automática, no un permiso, ni TFR, parques u otras restricciones. Confirma siempre en el AIP/NOTAM y SIGO (Chile) o B4UFLY y tu app LAANC (EE.UU.). Datos: OurAirports (dominio público), AIP-Chile DGAC, FAA.',
+    azNote:'Solo informativo, no oficial. Las zonas de aeropuertos salen de la ubicación de los aeropuertos (sin parques ni clases de espacio aéreo de EE.UU.); los círculos de EE.UU. son aproximados (5 mi). Las zonas P/R/D de Chile están transcritas del AIP de la DGAC (ENR 5.1, AMDT 67, 6 ago 2026), solo las que llegan al suelo; línea punteada = forma aproximada; no se muestran zonas temporales por NOTAM. La grilla LAANC es el mapa de instalaciones UAS de la FAA (solo EE.UU.): muestra la altura máxima de aprobación automática, no un permiso, ni TFR, parques u otras restricciones. Confirma siempre en el AIP/NOTAM y SIGO (Chile) o B4UFLY y tu app LAANC (EE.UU.). Áreas protegidas: Chile del Ministerio del Medio Ambiente (MMA, CC0, 2024), simplificadas; EE.UU. solo unidades del National Park Service. Datos: OurAirports (dominio público), AIP-Chile DGAC, MMA, NPS, FAA.',
     zLayer:'Zonas P/R/D Chile', zLP:'Prohibida (P)', zLR:'Restringida (R)', zLD:'Peligrosa (D)', zNoData:'No se pudieron cargar las zonas de Chile.',
     zKind:{ P:'prohibida', R:'restringida', D:'peligrosa' },
+    paLayer:'Áreas protegidas', paLNo:'Parque / reserva: sin drones', paLOther:'Otra área protegida', paNoData:'No se pudieron cargar las áreas protegidas.',
+    paZoom:'Acércate para ver las áreas protegidas.', paErr:'No se pudieron cargar los parques de EE.UU. Necesita conexión a internet.', paChecking:'Revisando áreas protegidas…',
+    paCat:{ PN:'Parque Nacional', RN:'Reserva Nacional', MN:'Monumento Natural', SN:'Santuario de la Naturaleza', PM:'Parque Marino', RM:'Reserva Marina', AMCP:'Área Marina Costera Protegida',
+      CP:'conservación privada o comunitaria', BNP:'bien nacional protegido', RF:'reserva forestal', PC:'paisaje de conservación' },
+    paInCL:(n, c) => `Dentro de ${n} (${c}). El vuelo recreativo de drones está prohibido en las áreas protegidas de Chile (CONAF, DGAC DAN 91, Ley 21.600). Los vuelos de investigación o manejo requieren autorización de CONAF.`,
+    paOtherCL:(n, c) => `Dentro de ${n} (${c}). No es un parque de CONAF, pero es un área protegida: pide permiso al dueño o administrador antes de volar.`,
+    paOutCL:'Fuera de las áreas protegidas de los datos del MMA. Los límites son aproximados (±150 m).',
+    paInUS:(n, ty) => `Dentro de ${n} (${ty}, National Park Service). Despegar, aterrizar u operar un dron aquí está prohibido sin permiso del superintendente (36 CFR 1.5).`,
+    paOutUS:'Fuera de unidades del National Park Service. No se muestran refugios de vida silvestre, parques estatales ni áreas silvestres, que pueden tener sus propias prohibiciones.',
     zIn:list => `Dentro de ${list}. No vueles ahí sin autorización de la DGAC; revisa el AIP y los NOTAM.`,
     zOut:'Fuera de las zonas P/R/D de Chile (AIP ENR 5.1, AMDT 67). No se muestran zonas temporales por NOTAM.',
     faaLayer:'Grilla LAANC', faaLeg:'LAANC máx. (ft):', faaZoom:'Acércate para cargar la grilla LAANC.', faaHint:'Toca el mapa para ver el límite LAANC de un punto.',
@@ -405,6 +423,7 @@ function renderMap() {
   if (!map) {
     map = L.map('map', { zoomControl: true });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+    paInit(); // canvas pane under everything else
     zLayer = L.layerGroup().addTo(map); // added first so airport rings and flight markers draw on top
     azLayer = L.layerGroup().addTo(map);
     layer = L.layerGroup().addTo(map);
@@ -478,13 +497,13 @@ function azInit() {
     if (!navigator.geolocation) { azMsg('', t('azNoGps')); return; }
     navigator.geolocation.getCurrentPosition(p => {
       const { latitude: la, longitude: lo } = p.coords;
-      if (!azOn && !faaOn && !zOn) { azSet(true); zSet(true); }
+      if (!azOn && !faaOn && !zOn && !paOn) { azSet(true); zSet(true); paSet(true); }
       map.setView([la, lo], Math.max(map.getZoom(), 11));
       spotCheck(la, lo);
     }, () => azMsg('', t('azNoGps')), { enableHighAccuracy: true, timeout: 10000 });
   };
   map.on('moveend', azRender);
-  map.on('click', e => { if (azOn || faaOn || zOn) spotCheck(e.latlng.lat, e.latlng.lng); });
+  map.on('click', e => { if (azOn || faaOn || zOn || paOn) spotCheck(e.latlng.lat, e.latlng.lng); });
   map.whenReady(() => azSet(!!state.settings.az)); // zoom is only readable once the map has a view
 }
 function spotPin(lat, lon) {
@@ -494,6 +513,7 @@ function spotPin(lat, lon) {
 function spotCheck(lat, lon) {
   spotPin(lat, lon);
   if (zOn) zCheckAt(lat, lon);
+  if (paOn) paCheckAt(lat, lon);
   if (azOn) azCheckAt(lat, lon);
   const us = faaOn && lat > 10; // the FAA grid only covers the US and its territories
   if (us) { faaCheckAt(lat, lon); lastSpot = [lat, lon]; } else if (faaOn) faaMsg('', '');
@@ -547,6 +567,91 @@ function zInit() {
   map.whenReady(() => zSet(!!state.settings.z));
 }
 
+// ---------- Protected areas ----------
+// Chile: geo/cl-protected.json (MMA open data, CC0; built by tools/build-cl-protected.py), loaded only when the layer is on.
+//   Each area: { n: name, c: category code, t: 's' (SNAP park/reserve, no recreational drones) | 'o' (other protected land), g: [polygon: [ring: [[lat, lon]...]]] }.
+// US: National Park Service boundaries, queried live (NPS public FeatureServer, CORS open), like the LAANC grid.
+const PA_NO = '#2e7d4f', PA_OTHER = '#9bb86a';
+const NPS_URL = 'https://services1.arcgis.com/fBc8EJBxQRMcHlei/ArcGIS/rest/services/NPS_Land_Resources_Division_Boundary_and_Tract_Data_Service/FeatureServer/2/query';
+const npsQuery = (geom, type, extra) => NPS_URL + '?' + new URLSearchParams({
+  where: '1=1', geometry: geom, geometryType: type, inSR: '4326', spatialRel: 'esriSpatialRelIntersects',
+  outFields: 'UNIT_NAME,UNIT_TYPE', outSR: '4326', f: 'geojson', ...extra });
+let paData = null, paLayer, paCanvas, paOn = false, paTimer, paCtl;
+const paLoad = () => paData ? Promise.resolve(paData) : fetch('geo/cl-protected.json').then(r => r.json()).then(d => {
+  for (const a of d.areas) { // bounding box per area so rendering and the spot check skip what is far away
+    let s = 90, n = -90, w = 180, e = -180;
+    for (const ring of a.g.flat(1)) for (const [la, lo] of ring) { if (la < s) s = la; if (la > n) n = la; if (lo < w) w = lo; if (lo > e) e = lo; }
+    a.bb = [s, w, n, e];
+  }
+  return (paData = d.areas);
+}).catch(() => null);
+const paUS = (lat, lon) => lat > 10 && lon < -60;
+function paMsg(cls, text) { const box = $('#paResult'); box.className = 'note ' + cls; box.textContent = text; box.hidden = !text; }
+function paInArea(lat, lon, a) { // even-odd over every ring of each polygon, so holes (lakes, enclaves) count as outside
+  const [s, w, n, e] = a.bb;
+  if (lat < s || lat > n || lon < w || lon > e) return false;
+  return a.g.some(poly => poly.reduce((inside, ring) => zInPoly(lat, lon, ring) ? !inside : inside, false));
+}
+function paRender() {
+  clearTimeout(paTimer);
+  if (paCtl) paCtl.abort();
+  paLayer.clearLayers();
+  if (!paOn) return;
+  const hint = $('#paResult').textContent === t('paZoom');
+  if (map.getZoom() < 7) { if (!azPin || hint) paMsg('', t('paZoom')); return; }
+  if (hint) paMsg('', ''); // zoomed back in: drop the hint, keep a spot-check result
+  const b = map.getBounds().pad(0.2), s = b.getSouth(), n = b.getNorth(), w = b.getWest(), e = b.getEast();
+  if (paData) for (const a of paData) {
+    const [as, aw, an, ae] = a.bb;
+    if (as > n || an < s || aw > e || ae < w) continue;
+    const col = a.t === 's' ? PA_NO : PA_OTHER;
+    L.polygon(a.g, { renderer: paCanvas, color: col, weight: 1, fillColor: col, fillOpacity: .18, interactive: false }).addTo(paLayer);
+  }
+  if (n > 10 && w < -60) paTimer = setTimeout(async () => { // US: live NPS boundaries for the view, simplified to the zoom
+    paCtl = new AbortController();
+    const tol = (e - w) / 800;
+    try {
+      const url = npsQuery([w, s, e, n].join(','), 'esriGeometryEnvelope', { maxAllowableOffset: String(tol), geometryPrecision: '4' });
+      const fs = (await (await fetch(url, { signal: paCtl.signal })).json()).features || [];
+      L.geoJSON(fs, { renderer: paCanvas, interactive: false, style: () => ({ color: PA_NO, weight: 1, fillColor: PA_NO, fillOpacity: .18 }) }).addTo(paLayer);
+    } catch (err) { if (err.name !== 'AbortError') paMsg('', t('paErr')); }
+  }, 350);
+}
+function paSet(on) {
+  paOn = on; state.settings.pa = on; save();
+  $('#paToggle').classList.toggle('on', on);
+  document.querySelectorAll('.paLeg').forEach(e => { e.hidden = !on; });
+  if (!on) paMsg('', '');
+  if (on) paLoad().then(d => { if (!d) paMsg('', t('paNoData')); paRender(); }); else paRender();
+}
+async function paCheckAt(lat, lon) {
+  if (paUS(lat, lon)) {
+    paMsg('', t('paChecking'));
+    try {
+      const fs = (await (await fetch(npsQuery(`${lon},${lat}`, 'esriGeometryPoint', { returnGeometry: 'false' }))).json()).features || [];
+      if (fs.length) paMsg('az-in', t('paInUS', fs[0].properties.UNIT_NAME, (fs[0].properties.UNIT_TYPE || '').replace(/s$/, '')));
+      else paMsg('', t('paOutUS'));
+    } catch { paMsg('', t('paErr')); }
+    return;
+  }
+  const d = await paLoad();
+  if (!d) { paMsg('', t('paNoData')); return; }
+  const hits = d.filter(a => paInArea(lat, lon, a));
+  const cat = t('paCat');
+  const park = hits.find(a => a.t === 's'), other = hits.find(a => a.t === 'o');
+  if (park) paMsg('az-in', t('paInCL', park.n, cat[park.c]));
+  else if (other) paMsg('az-near', t('paOtherCL', other.n, cat[other.c]));
+  else paMsg('', inChile(lat, lon) ? t('paOutCL') : '');
+}
+function paInit() {
+  map.createPane('pa').style.zIndex = 340; // under the LAANC grid, airport rings and flight markers
+  paCanvas = L.canvas({ pane: 'pa' });
+  paLayer = L.layerGroup().addTo(map);
+  $('#paToggle').onclick = () => paSet(!paOn);
+  map.on('moveend', paRender);
+  map.whenReady(() => paSet(!!state.settings.pa));
+}
+
 // ---------- FAA LAANC grid (UAS Facility Maps; FAA public data, US only) ----------
 // Each grid square carries the max altitude (ft AGL) the FAA lets LAANC approve automatically. It does not show TFRs,
 // parks or other restrictions, and a ceiling is not a permission: the pilot still requests authorization in a LAANC app.
@@ -595,7 +700,7 @@ function faaSet(on) {
   $('#faaToggle').classList.toggle('on', on);
   $('#faaLegend').hidden = !on;
   if (!on) $('#apRow').hidden = true;
-  if (!on && !azOn && !zOn && azPin) { azPin.remove(); azPin = null; }
+  if (!on && !azOn && !zOn && !paOn && azPin) { azPin.remove(); azPin = null; }
   faaRender();
   if (map) azRender(); // US rings hide while the grid is on
 }
