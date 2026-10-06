@@ -82,7 +82,14 @@ h2.month{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(
 .missing{color:var(--warn)}
 .fab{position:fixed;right:18px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:31;background:var(--accent);color:var(--accent-ink);border:0;border-radius:16px;padding:14px 18px;font:inherit;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.25);cursor:pointer;display:flex;gap:6px;align-items:center}
 #map{height:calc(100vh - 220px);min-height:360px;border-radius:12px;border:1px solid var(--line)}
-.legend{display:flex;gap:14px;font-size:13px;color:var(--muted);margin-bottom:10px}
+.legend{display:flex;gap:14px;font-size:13px;color:var(--muted);margin-bottom:10px;flex-wrap:wrap}
+#azResult,#faaResult{margin:10px 0 0;border-left:4px solid var(--line)}
+#azResult.az-in,#faaResult.az-in{border-left-color:#c0392b;color:var(--text)}
+#azResult.az-near,#faaResult.az-near{border-left-color:#d98c00;color:var(--text)}
+#azResult.az-ok,#faaResult.az-ok{border-left-color:#4f7a00;color:var(--text)}
+#faaLegend{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
+#faaLegend .dot{margin-left:6px}
+#azNote{margin:10px 0 0;font-size:12px}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
 section.box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
 section.box h3{margin:0 0 10px;font-size:15px}
@@ -139,11 +146,22 @@ ul.rules li{margin:6px 0}
   </div>
 
   <div class="view" id="v-map">
+    <div class="toolbar">
+      <button class="chip" id="azToggle" data-t="azLayer">Airport zones</button>
+      <button class="chip" id="faaToggle" data-t="faaLayer">LAANC grid</button>
+      <button class="chip" id="azCheck" data-t="azCheck">Check my spot</button>
+    </div>
     <div class="legend">
       <span><span class="dot" style="background:#7c8a80"></span><span data-t="recreational">Recreational</span></span>
       <span><span class="dot" style="background:#9bd400"></span><span data-t="proAuth">Professional / approval</span></span>
+      <span class="azLeg" hidden><span class="dot" style="background:#c0392b"></span><span data-t="azL8">8 km airport zone</span></span>
+      <span class="azLeg" hidden><span class="dot" style="background:#d98c00"></span><span data-t="azL5">5 km aerodrome zone</span></span>
+      <span id="faaLegend" hidden></span>
     </div>
     <div id="map"></div>
+    <div class="note" id="azResult" hidden></div>
+    <div class="note" id="faaResult" hidden></div>
+    <p class="note" id="azNote" data-t="azNote"></p>
   </div>
 
   <div class="view" id="v-fleet">

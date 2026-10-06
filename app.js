@@ -41,6 +41,23 @@ const STR = {
     weather:'Weather', observer:'Observer', incident:'Incidents / remarks', credentialNo:'Pilot credential #',
     weatherPh:'e.g. clear, wind 10 km/h', observerPh:'name, if any', end:'End', aircraftReg:'Aircraft reg.',
     workType:'Type of work', cyclesUsed:'Cycles', logTitle:'Flight log', date:'Date',
+    azLayer:'Airport zones', azCheck:'Check my spot', azL8:'8 km airport zone', azL5:'5 km aerodrome zone',
+    azNote:'Informational only, not official. Airport zones come from airport locations (no P/R/D zones, parks, or US airspace classes); US rings are approximate (5 mi). The LAANC grid is the FAA UAS Facility Map (US only): it shows the maximum altitude for automatic approval, not permission, and not TFRs, parks or other restrictions. Always confirm in the AIP/NOTAM and SIGO (Chile) or B4UFLY and your LAANC app (US). Data: OurAirports (public domain), FAA.',
+    faaLayer:'LAANC grid', faaLeg:'LAANC max (ft):', faaZoom:'Zoom in to load the LAANC grid.', faaHint:'Tap the map to see the LAANC ceiling for a spot.',
+    faaErr:'Could not load the FAA grid. It needs an internet connection.', faaMany:'Too many squares in view. Zoom in to load the LAANC grid.',
+    faaNone:'No LAANC grid squares in this view (the grid only covers US controlled airspace near airports).', faaChecking:'Checking the FAA grid…',
+    faaCell:(c, apt, cls, eff) => `LAANC grid: automatic approval up to ${c} ft AGL here (${apt}, Class ${cls}). You still must request authorization in a LAANC app before flying. FAA map effective ${eff}.`,
+    faaZero:(apt, cls, eff) => `LAANC grid: 0 ft here (${apt}, Class ${cls}). No automatic approval. Part 107 pilots can ask the FAA for further coordination. FAA map effective ${eff}.`,
+    faaNoGrid:'No LAANC grid square at this spot. That is not permission to fly: TFRs, parks and other restrictions are not in this layer. Check B4UFLY.',
+    azHint:'Tap the map to check any spot.', azZoom:'Zoom in to see airport zones. Tap the map to check any spot.',
+    azLocating:'Finding your location…', azNoGps:'Could not get your location. Allow location access, or tap the map instead.',
+    azNoData:'Airport data could not be loaded.', azNone:'No airport in the data near this spot (data covers Chile and the US only).',
+    azInside:(n, c, km, d) => `Inside the ${km} km zone of ${n} (${c}), ${d} km away. Do not fly without checking the rules and authorization.`,
+    azNear:(n, c, km, d) => `Close to the ${km} km zone of ${n} (${c}), ${d} km away. Check before you fly.`,
+    azClear:(n, c, km, d) => `Outside airport zones. Nearest: ${n} (${c}), ${d} km away (zone ${km} km). Still check other restrictions.`,
+    azInsideUS:(n, c, km, d) => `Inside the approximate 5 mi ring of ${n} (${c}), ${d} km away. You are likely near controlled airspace. Check B4UFLY and get LAANC authorization if required.`,
+    azNearUS:(n, c, km, d) => `Close to the approximate 5 mi ring of ${n} (${c}), ${d} km away. Controlled airspace can extend further. Check B4UFLY/LAANC.`,
+    azClearUS:(n, c, km, d) => `Outside this app's approximate ring, but that does not mean clear. Class B/C/D airspace can reach well past 5 mi and is not shown. Nearest: ${n} (${c}), ${d} km. Check B4UFLY/LAANC before flying.`,
   },
   es: {
     appName:'Bitácora de Vuelo', tabLog:'Bitácora', tabMap:'Mapa', tabFleet:'Flota', tabMore:'Más',
@@ -80,6 +97,23 @@ const STR = {
     weather:'Clima', observer:'Observador RPAS', incident:'Incidentes / observaciones', credentialNo:'N° credencial del piloto',
     weatherPh:'ej. despejado, viento 10 km/h', observerPh:'nombre, si hubo', end:'Término', aircraftReg:'Registro aeronave',
     workType:'Tipo de trabajo', cyclesUsed:'Ciclos', logTitle:'Bitácora de vuelo', date:'Fecha',
+    azLayer:'Zonas de aeropuertos', azCheck:'Revisar mi ubicación', azL8:'Zona de aeropuerto 8 km', azL5:'Zona de aeródromo 5 km',
+    azNote:'Solo informativo, no oficial. Las zonas de aeropuertos salen de la ubicación de los aeropuertos (sin zonas P/R/D, parques ni clases de espacio aéreo de EE.UU.); los círculos de EE.UU. son aproximados (5 mi). La grilla LAANC es el mapa de instalaciones UAS de la FAA (solo EE.UU.): muestra la altura máxima de aprobación automática, no un permiso, ni TFR, parques u otras restricciones. Confirma siempre en el AIP/NOTAM y SIGO (Chile) o B4UFLY y tu app LAANC (EE.UU.). Datos: OurAirports (dominio público), FAA.',
+    faaLayer:'Grilla LAANC', faaLeg:'LAANC máx. (ft):', faaZoom:'Acércate para cargar la grilla LAANC.', faaHint:'Toca el mapa para ver el límite LAANC de un punto.',
+    faaErr:'No se pudo cargar la grilla de la FAA. Necesita conexión a internet.', faaMany:'Demasiados cuadros a la vista. Acércate para cargar la grilla LAANC.',
+    faaNone:'No hay cuadros de la grilla LAANC en esta vista (solo cubre espacio aéreo controlado de EE.UU. cerca de aeropuertos).', faaChecking:'Consultando la grilla de la FAA…',
+    faaCell:(c, apt, cls, eff) => `Grilla LAANC: aprobación automática hasta ${c} ft AGL aquí (${apt}, Clase ${cls}). Igual debes pedir autorización en una app LAANC antes de volar. Mapa FAA vigente desde ${eff}.`,
+    faaZero:(apt, cls, eff) => `Grilla LAANC: 0 ft aquí (${apt}, Clase ${cls}). Sin aprobación automática. Los pilotos Part 107 pueden pedir coordinación adicional a la FAA. Mapa FAA vigente desde ${eff}.`,
+    faaNoGrid:'No hay cuadro de la grilla LAANC en este punto. Eso no es permiso para volar: TFR, parques y otras restricciones no están en esta capa. Revisa B4UFLY.',
+    azHint:'Toca el mapa para revisar cualquier punto.', azZoom:'Acércate para ver las zonas de aeropuertos. Toca el mapa para revisar cualquier punto.',
+    azLocating:'Buscando tu ubicación…', azNoGps:'No se pudo obtener tu ubicación. Permite el acceso a la ubicación o toca el mapa.',
+    azNoData:'No se pudieron cargar los datos de aeropuertos.', azNone:'No hay ningún aeropuerto en los datos cerca de este punto (solo Chile y EE.UU.).',
+    azInside:(n, c, km, d) => `Dentro de la zona de ${km} km de ${n} (${c}), a ${d} km. No vueles sin revisar las normas y la autorización.`,
+    azNear:(n, c, km, d) => `Cerca de la zona de ${km} km de ${n} (${c}), a ${d} km. Revisa antes de volar.`,
+    azClear:(n, c, km, d) => `Fuera de zonas de aeropuertos. Más cercano: ${n} (${c}), a ${d} km (zona de ${km} km). Revisa igual otras restricciones.`,
+    azInsideUS:(n, c, km, d) => `Dentro del círculo aproximado de 5 mi de ${n} (${c}), a ${d} km. Probablemente estás cerca de espacio aéreo controlado. Revisa B4UFLY y obtén autorización LAANC si corresponde.`,
+    azNearUS:(n, c, km, d) => `Cerca del círculo aproximado de 5 mi de ${n} (${c}), a ${d} km. El espacio aéreo controlado puede extenderse más. Revisa B4UFLY/LAANC.`,
+    azClearUS:(n, c, km, d) => `Fuera del círculo aproximado de esta app, pero eso no significa que esté libre. El espacio aéreo clase B/C/D puede llegar mucho más allá de 5 mi y no se muestra. Más cercano: ${n} (${c}), a ${d} km. Revisa B4UFLY/LAANC antes de volar.`,
   }
 };
 const t = (k, ...a) => { const v = (STR[state.settings.lang] || STR.en)[k] ?? STR.en[k] ?? k; return typeof v === 'function' ? v(...a) : v; };
@@ -361,19 +395,155 @@ function renderMap() {
   if (!map) {
     map = L.map('map', { zoomControl: true });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+    azLayer = L.layerGroup().addTo(map); // added first so flight markers draw on top
     layer = L.layerGroup().addTo(map);
+    azInit();
+    faaInit();
   }
   layer.clearLayers();
   const pts = [];
   for (const f of state.flights) {
     if (f.lat == null) continue;
     const isL = !!f.laanc || f.type === 'Part 107';
-    L.circleMarker([f.lat, f.lng], { radius: isL ? 9 : 7, color: isL ? '#4f7a00' : '#3d4740', weight: 2, fillColor: isL ? '#9bd400' : '#7c8a80', fillOpacity: .85 })
+    L.circleMarker([f.lat, f.lng], { radius: isL ? 9 : 7, color: isL ? '#4f7a00' : '#3d4740', weight: 2, fillColor: isL ? '#9bd400' : '#7c8a80', fillOpacity: .85, bubblingMouseEvents: false })
       .bindPopup(`<b>${esc(new Date(f.start).toLocaleDateString(loc(), { dateStyle: 'medium' }))}</b><br>${esc(f.location)}${f.laanc ? `<br>${ruleOf(f).authShort} ${esc(f.laanc)}` : ''}`)
       .addTo(layer);
     pts.push([f.lat, f.lng]);
   }
   setTimeout(() => { map.invalidateSize(); if (pts.length) map.fitBounds(pts, { padding: [30, 30], maxZoom: 14 }); else map.setView(home() === 'CL' ? [-33.45, -70.66] : [25.65, -80.43], 10); }, 50);
+}
+
+// ---------- airport zones (informational only; data: OurAirports, public domain) ----------
+// Each row: [code, name, lat, lon, ring km, country]. Chile: 8 km commercial airports, 5 km other aerodromes (the stricter
+// reading in rules.js). US: ~5 mi ring around large/medium airports, approximate; class B/C/D and LAANC are not shown.
+let azData = null, azLayer, azOn = false, azPin;
+const azLoad = () => azData ? Promise.resolve(azData) : fetch('geo/airports.json').then(r => r.json()).then(d => (azData = d)).catch(() => null);
+function azDist(lat1, lon1, lat2, lon2) {
+  const rad = Math.PI / 180, dLat = (lat2 - lat1) * rad, dLon = (lon2 - lon1) * rad;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(a));
+}
+function azMsg(cls, text) { const box = $('#azResult'); box.className = 'note ' + cls; box.textContent = text; box.hidden = !text; }
+function azRender() {
+  azLayer.clearLayers();
+  if (!azOn || !azData) { azMsg('', ''); return; }
+  if (map.getZoom() < 8) { azMsg('', t('azZoom')); return; }
+  const b = map.getBounds().pad(0.3);
+  for (const [code, name, lat, lon, km, cc] of azData) {
+    if (!b.contains([lat, lon])) continue;
+    const col = km === 8 ? '#c0392b' : '#d98c00';
+    // dashed = approximate (US); the FAA grid replaces the US rings when it is on
+    if (!(cc === 'US' && faaOn)) L.circle([lat, lon], { radius: km * 1000, color: col, weight: 1.5, fillColor: col, fillOpacity: .12, dashArray: cc === 'US' ? '6 6' : null }).addTo(azLayer);
+    L.circleMarker([lat, lon], { radius: 3, color: col, weight: 1, fillColor: col, fillOpacity: 1, bubblingMouseEvents: false })
+      .bindTooltip(`${code} · ${name}`).addTo(azLayer);
+  }
+  if (!azPin) azMsg('', t('azHint'));
+}
+function azSet(on) {
+  azOn = on; state.settings.az = on; save();
+  $('#azToggle').classList.toggle('on', on);
+  document.querySelectorAll('.azLeg').forEach(e => { e.hidden = !on; });
+  if (on) azLoad().then(d => { if (!d) azMsg('', t('azNoData')); else azRender(); }); else azRender();
+}
+function azCheckAt(lat, lon) {
+  azLoad().then(d => {
+    if (!d) { azMsg('', t('azNoData')); return; }
+    let best = null;
+    for (const a of d) { const dist = azDist(lat, lon, a[2], a[3]), over = dist - a[4]; if (!best || over < best.over) best = { a, dist, over }; }
+    if (best.dist > 150) { azMsg('', t('azNone')); return; }
+    const [code, name, , , km, cc] = best.a, dist = best.dist.toFixed(1), us = cc === 'US', sfx = us ? 'US' : '';
+    if (us && faaOn) { azMsg('', ''); return; } // the FAA grid answers for the US
+    // US rings are only a rough stand-in for Class B/C/D, so never answer "clear" there.
+    if (best.over <= 0) azMsg('az-in', t('azInside' + sfx, name, code, km, dist));
+    else if (best.over <= 3) azMsg('az-near', t('azNear' + sfx, name, code, km, dist));
+    else azMsg(us ? 'az-near' : 'az-ok', t('azClear' + sfx, name, code, km, dist));
+  });
+}
+function azInit() {
+  $('#azToggle').onclick = () => azSet(!azOn);
+  $('#azCheck').onclick = () => {
+    azMsg('', t('azLocating'));
+    if (!navigator.geolocation) { azMsg('', t('azNoGps')); return; }
+    navigator.geolocation.getCurrentPosition(p => {
+      const { latitude: la, longitude: lo } = p.coords;
+      if (!azOn && !faaOn) azSet(true);
+      map.setView([la, lo], Math.max(map.getZoom(), 11));
+      spotCheck(la, lo);
+    }, () => azMsg('', t('azNoGps')), { enableHighAccuracy: true, timeout: 10000 });
+  };
+  map.on('moveend', azRender);
+  map.on('click', e => { if (azOn || faaOn) spotCheck(e.latlng.lat, e.latlng.lng); });
+  map.whenReady(() => azSet(!!state.settings.az)); // zoom is only readable once the map has a view
+}
+function spotPin(lat, lon) {
+  if (azPin) azPin.remove();
+  azPin = L.circleMarker([lat, lon], { radius: 8, color: '#1d6fd8', weight: 3, fillColor: '#1d6fd8', fillOpacity: .35, bubblingMouseEvents: false }).addTo(map);
+}
+function spotCheck(lat, lon) {
+  spotPin(lat, lon);
+  if (azOn) azCheckAt(lat, lon);
+  if (faaOn) { if (lat > 10) faaCheckAt(lat, lon); else faaMsg('', ''); } // the FAA grid only covers the US and its territories
+}
+
+// ---------- FAA LAANC grid (UAS Facility Maps; FAA public data, US only) ----------
+// Each grid square carries the max altitude (ft AGL) the FAA lets LAANC approve automatically. It does not show TFRs,
+// parks or other restrictions, and a ceiling is not a permission: the pilot still requests authorization in a LAANC app.
+const FAA_URL = 'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/FAA_UAS_FacilityMap_Data/FeatureServer/0/query';
+const FAA_COLORS = { 0: '#c0392b', 50: '#e0562b', 100: '#e8832a', 150: '#eba72c', 200: '#e6c62e', 300: '#a9c93a', 400: '#5aa845' };
+const FAA_MAX = 2000; // the service's page size; a view that fills it is "too many squares"
+let faaOn = false, faaLayer, faaCanvas, faaCtl, faaTimer;
+const faaColor = c => FAA_COLORS[c] ?? (c > 400 ? FAA_COLORS[400] : '#999');
+const faaQuery = (geom, type, extra) => FAA_URL + '?' + new URLSearchParams({
+  where: '1=1', geometry: geom, geometryType: type, inSR: '4326', spatialRel: 'esriSpatialRelIntersects',
+  outFields: 'CEILING,APT1_NAME,APT1_FAAID,AIRSPACE_1,MAP_EFF', outSR: '4326', f: 'geojson', ...extra });
+function faaMsg(cls, text) { const box = $('#faaResult'); box.className = 'note ' + cls; box.textContent = text; box.hidden = !text; }
+function faaRender() {
+  clearTimeout(faaTimer);
+  if (faaCtl) faaCtl.abort();
+  if (!faaOn) { faaLayer.clearLayers(); faaMsg('', ''); return; }
+  if (map.getZoom() < 10) { faaLayer.clearLayers(); faaMsg('', t('faaZoom')); return; }
+  faaTimer = setTimeout(async () => { // debounce: wait until the map stops moving
+    faaCtl = new AbortController();
+    const b = map.getBounds().pad(0.2);
+    try {
+      const url = faaQuery([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(','), 'esriGeometryEnvelope',
+        { returnGeometry: 'true', geometryPrecision: '5', resultRecordCount: String(FAA_MAX) });
+      const fs = (await (await fetch(url, { signal: faaCtl.signal })).json()).features || [];
+      faaLayer.clearLayers();
+      if (fs.length >= FAA_MAX) { faaMsg('', t('faaMany')); return; }
+      L.geoJSON(fs, { renderer: faaCanvas, interactive: false,
+        style: f => ({ stroke: true, color: '#fff', weight: .4, opacity: .5, fillColor: faaColor(f.properties.CEILING), fillOpacity: .42 }) }).addTo(faaLayer);
+      faaMsg('', fs.length ? (azPin ? '' : t('faaHint')) : t('faaNone'));
+    } catch (e) { if (e.name !== 'AbortError') faaMsg('', t('faaErr')); }
+  }, 350);
+}
+async function faaCheckAt(lat, lon) {
+  faaMsg('', t('faaChecking'));
+  try {
+    const fs = (await (await fetch(faaQuery(`${lon},${lat}`, 'esriGeometryPoint', { returnGeometry: 'false' }))).json()).features || [];
+    if (!fs.length) { faaMsg('az-near', t('faaNoGrid')); return; }
+    // overlapping squares from several airports: the lowest ceiling is the one that limits you
+    const p = fs.map(f => f.properties).sort((a, b) => a.CEILING - b.CEILING)[0];
+    if (p.CEILING === 0) faaMsg('az-in', t('faaZero', p.APT1_NAME, p.AIRSPACE_1, p.MAP_EFF));
+    else faaMsg('az-near', t('faaCell', p.CEILING, p.APT1_NAME, p.AIRSPACE_1, p.MAP_EFF));
+  } catch { faaMsg('', t('faaErr')); }
+}
+function faaSet(on) {
+  faaOn = on; state.settings.faa = on; save();
+  $('#faaToggle').classList.toggle('on', on);
+  $('#faaLegend').hidden = !on;
+  if (!on && !azOn && azPin) { azPin.remove(); azPin = null; }
+  faaRender();
+  if (map) azRender(); // US rings hide while the grid is on
+}
+function faaInit() {
+  map.createPane('faa').style.zIndex = 350; // under the airport rings and the flight markers
+  faaCanvas = L.canvas({ pane: 'faa' });
+  faaLayer = L.layerGroup().addTo(map);
+  $('#faaLegend').innerHTML = `${t('faaLeg')} ` + [0, 100, 200, 300, 400].map(c => `<span class="dot" style="background:${faaColor(c)}"></span>${c}`).join(' ');
+  $('#faaToggle').onclick = () => faaSet(!faaOn);
+  map.on('moveend', faaRender);
+  map.whenReady(() => faaSet(!!state.settings.faa));
 }
 function renderFleet() {
   const stat = pred => { const fl = state.flights.filter(pred); return [fl.length, fl.reduce((s, f) => s + (f.airMin || 0), 0)]; };
