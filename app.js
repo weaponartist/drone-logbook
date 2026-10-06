@@ -42,7 +42,11 @@ const STR = {
     weatherPh:'e.g. clear, wind 10 km/h', observerPh:'name, if any', end:'End', aircraftReg:'Aircraft reg.',
     workType:'Type of work', cyclesUsed:'Cycles', logTitle:'Flight log', date:'Date',
     azLayer:'Airport zones', azCheck:'Check my spot', azL8:'8 km airport zone', azL5:'5 km aerodrome zone',
-    azNote:'Informational only, not official. Airport zones come from airport locations (no P/R/D zones, parks, or US airspace classes); US rings are approximate (5 mi). The LAANC grid is the FAA UAS Facility Map (US only): it shows the maximum altitude for automatic approval, not permission, and not TFRs, parks or other restrictions. Always confirm in the AIP/NOTAM and SIGO (Chile) or B4UFLY and your LAANC app (US). Data: OurAirports (public domain), FAA.',
+    azNote:'Informational only, not official. Airport zones come from airport locations (no parks or US airspace classes); US rings are approximate (5 mi). Chile P/R/D zones are transcribed from the DGAC AIP (ENR 5.1, AMDT 67, 6 Aug 2026), only those that reach the ground; dashed = approximate shape; temporary NOTAM zones are not shown. The LAANC grid is the FAA UAS Facility Map (US only): it shows the maximum altitude for automatic approval, not permission, and not TFRs, parks or other restrictions. Always confirm in the AIP/NOTAM and SIGO (Chile) or B4UFLY and your LAANC app (US). Data: OurAirports (public domain), DGAC AIP-Chile, FAA.',
+    zLayer:'Chile P/R/D zones', zLP:'Prohibited (P)', zLR:'Restricted (R)', zLD:'Danger (D)', zNoData:'Chile zone data could not be loaded.',
+    zKind:{ P:'prohibited', R:'restricted', D:'danger' },
+    zIn:list => `Inside ${list}. Do not fly there without DGAC authorization; check the AIP and NOTAMs.`,
+    zOut:'Not inside any Chile P/R/D zone (AIP ENR 5.1, AMDT 67). Temporary NOTAM zones are not shown.',
     faaLayer:'LAANC grid', faaLeg:'LAANC max (ft):', faaZoom:'Zoom in to load the LAANC grid.', faaHint:'Tap the map to see the LAANC ceiling for a spot.',
     faaErr:'Could not load the FAA grid. It needs an internet connection.', faaMany:'Too many squares in view. Zoom in to load the LAANC grid.',
     faaNone:'No LAANC grid squares in this view (the grid only covers US controlled airspace near airports).', faaChecking:'Checking the FAA grid…',
@@ -99,7 +103,11 @@ const STR = {
     weatherPh:'ej. despejado, viento 10 km/h', observerPh:'nombre, si hubo', end:'Término', aircraftReg:'Registro aeronave',
     workType:'Tipo de trabajo', cyclesUsed:'Ciclos', logTitle:'Bitácora de vuelo', date:'Fecha',
     azLayer:'Zonas de aeropuertos', azCheck:'Revisar mi ubicación', azL8:'Zona de aeropuerto 8 km', azL5:'Zona de aeródromo 5 km',
-    azNote:'Solo informativo, no oficial. Las zonas de aeropuertos salen de la ubicación de los aeropuertos (sin zonas P/R/D, parques ni clases de espacio aéreo de EE.UU.); los círculos de EE.UU. son aproximados (5 mi). La grilla LAANC es el mapa de instalaciones UAS de la FAA (solo EE.UU.): muestra la altura máxima de aprobación automática, no un permiso, ni TFR, parques u otras restricciones. Confirma siempre en el AIP/NOTAM y SIGO (Chile) o B4UFLY y tu app LAANC (EE.UU.). Datos: OurAirports (dominio público), FAA.',
+    azNote:'Solo informativo, no oficial. Las zonas de aeropuertos salen de la ubicación de los aeropuertos (sin parques ni clases de espacio aéreo de EE.UU.); los círculos de EE.UU. son aproximados (5 mi). Las zonas P/R/D de Chile están transcritas del AIP de la DGAC (ENR 5.1, AMDT 67, 6 ago 2026), solo las que llegan al suelo; línea punteada = forma aproximada; no se muestran zonas temporales por NOTAM. La grilla LAANC es el mapa de instalaciones UAS de la FAA (solo EE.UU.): muestra la altura máxima de aprobación automática, no un permiso, ni TFR, parques u otras restricciones. Confirma siempre en el AIP/NOTAM y SIGO (Chile) o B4UFLY y tu app LAANC (EE.UU.). Datos: OurAirports (dominio público), AIP-Chile DGAC, FAA.',
+    zLayer:'Zonas P/R/D Chile', zLP:'Prohibida (P)', zLR:'Restringida (R)', zLD:'Peligrosa (D)', zNoData:'No se pudieron cargar las zonas de Chile.',
+    zKind:{ P:'prohibida', R:'restringida', D:'peligrosa' },
+    zIn:list => `Dentro de ${list}. No vueles ahí sin autorización de la DGAC; revisa el AIP y los NOTAM.`,
+    zOut:'Fuera de las zonas P/R/D de Chile (AIP ENR 5.1, AMDT 67). No se muestran zonas temporales por NOTAM.',
     faaLayer:'Grilla LAANC', faaLeg:'LAANC máx. (ft):', faaZoom:'Acércate para cargar la grilla LAANC.', faaHint:'Toca el mapa para ver el límite LAANC de un punto.',
     faaErr:'No se pudo cargar la grilla de la FAA. Necesita conexión a internet.', faaMany:'Demasiados cuadros a la vista. Acércate para cargar la grilla LAANC.',
     faaNone:'No hay cuadros de la grilla LAANC en esta vista (solo cubre espacio aéreo controlado de EE.UU. cerca de aeropuertos).', faaChecking:'Consultando la grilla de la FAA…',
@@ -397,9 +405,11 @@ function renderMap() {
   if (!map) {
     map = L.map('map', { zoomControl: true });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
-    azLayer = L.layerGroup().addTo(map); // added first so flight markers draw on top
+    zLayer = L.layerGroup().addTo(map); // added first so airport rings and flight markers draw on top
+    azLayer = L.layerGroup().addTo(map);
     layer = L.layerGroup().addTo(map);
     azInit();
+    zInit();
     faaInit();
   }
   layer.clearLayers();
@@ -468,13 +478,13 @@ function azInit() {
     if (!navigator.geolocation) { azMsg('', t('azNoGps')); return; }
     navigator.geolocation.getCurrentPosition(p => {
       const { latitude: la, longitude: lo } = p.coords;
-      if (!azOn && !faaOn) azSet(true);
+      if (!azOn && !faaOn && !zOn) { azSet(true); zSet(true); }
       map.setView([la, lo], Math.max(map.getZoom(), 11));
       spotCheck(la, lo);
     }, () => azMsg('', t('azNoGps')), { enableHighAccuracy: true, timeout: 10000 });
   };
   map.on('moveend', azRender);
-  map.on('click', e => { if (azOn || faaOn) spotCheck(e.latlng.lat, e.latlng.lng); });
+  map.on('click', e => { if (azOn || faaOn || zOn) spotCheck(e.latlng.lat, e.latlng.lng); });
   map.whenReady(() => azSet(!!state.settings.az)); // zoom is only readable once the map has a view
 }
 function spotPin(lat, lon) {
@@ -483,10 +493,58 @@ function spotPin(lat, lon) {
 }
 function spotCheck(lat, lon) {
   spotPin(lat, lon);
+  if (zOn) zCheckAt(lat, lon);
   if (azOn) azCheckAt(lat, lon);
   const us = faaOn && lat > 10; // the FAA grid only covers the US and its territories
   if (us) { faaCheckAt(lat, lon); lastSpot = [lat, lon]; } else if (faaOn) faaMsg('', '');
   $('#apRow').hidden = !us; // LAANC authorization happens in AutoPylot, not here
+}
+
+// ---------- Chile P/R/D zones (DGAC AIP-Chile ENR 5.1, hand-transcribed by tools/build-cl-zones.py) ----------
+// Only zones whose lower limit is the ground. Each zone: { id, k: 'P'|'R'|'D', n: name, up, lo, when, note, approx, g: [[lat, lon], ...] }.
+const Z_COLORS = { P: '#b0186e', R: '#7a3db8', D: '#1f7fc4' };
+let zData = null, zLayer, zOn = false;
+const zLoad = () => zData ? Promise.resolve(zData) : fetch('geo/cl-zones.json').then(r => r.json()).then(d => (zData = d.zones)).catch(() => null);
+const inChile = (lat, lon) => lat < -17 && lat > -57 && lon > -76 && lon < -66;
+function zMsg(cls, text) { const box = $('#zResult'); box.className = 'note ' + cls; box.textContent = text; box.hidden = !text; }
+function zInPoly(lat, lon, g) { // ray casting; zones are small enough to treat lat/lon as flat
+  let inside = false;
+  for (let i = 0, j = g.length - 1; i < g.length; j = i++) {
+    const [ai, oi] = g[i], [aj, oj] = g[j];
+    if ((ai > lat) !== (aj > lat) && lon < (oj - oi) * (lat - ai) / (aj - ai) + oi) inside = !inside;
+  }
+  return inside;
+}
+function zRender() {
+  zLayer.clearLayers();
+  if (!zOn || !zData) return;
+  for (const z of zData) {
+    const col = Z_COLORS[z.k];
+    L.polygon(z.g, { color: col, weight: 1.5, fillColor: col, fillOpacity: z.k === 'P' ? .22 : .12, dashArray: z.approx ? '6 5' : null })
+      .bindTooltip(`${z.id} · ${z.n}`).addTo(zLayer); // taps fall through to the map, which runs the spot check
+  }
+}
+function zSet(on) {
+  zOn = on; state.settings.z = on; save();
+  $('#zToggle').classList.toggle('on', on);
+  document.querySelectorAll('.zLeg').forEach(e => { e.hidden = !on; });
+  if (!on) zMsg('', '');
+  if (on) zLoad().then(d => { if (!d) zMsg('', t('zNoData')); else zRender(); }); else zRender();
+}
+function zCheckAt(lat, lon) {
+  zLoad().then(d => {
+    if (!d) { zMsg('', t('zNoData')); return; }
+    if (!inChile(lat, lon)) { zMsg('', ''); return; }
+    const hits = d.filter(z => zInPoly(lat, lon, z.g));
+    if (!hits.length) { zMsg('', t('zOut')); return; }
+    const kind = t('zKind');
+    const list = hits.map(z => `${z.id} ${z.n} (${kind[z.k]}, ${z.lo}–${z.up}${z.when ? ', ' + z.when : ''}${z.note ? ', ' + z.note : ''})`).join('; ');
+    zMsg(hits.some(z => z.k === 'P') ? 'az-in' : 'az-near', t('zIn', list));
+  });
+}
+function zInit() {
+  $('#zToggle').onclick = () => zSet(!zOn);
+  map.whenReady(() => zSet(!!state.settings.z));
 }
 
 // ---------- FAA LAANC grid (UAS Facility Maps; FAA public data, US only) ----------
@@ -537,7 +595,7 @@ function faaSet(on) {
   $('#faaToggle').classList.toggle('on', on);
   $('#faaLegend').hidden = !on;
   if (!on) $('#apRow').hidden = true;
-  if (!on && !azOn && azPin) { azPin.remove(); azPin = null; }
+  if (!on && !azOn && !zOn && azPin) { azPin.remove(); azPin = null; }
   faaRender();
   if (map) azRender(); // US rings hide while the grid is on
 }

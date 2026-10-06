@@ -61,6 +61,7 @@ nav.tabs button.on svg{color:var(--accent)}
 .note{background:var(--surface-2);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.45}
 .note b{color:var(--text)}
 #apRow[hidden],#faaLegend[hidden]{display:none}
+.leaflet-interactive:focus{outline:none}
 .toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:99px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
 .chip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
@@ -84,13 +85,13 @@ h2.month{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(
 .fab{position:fixed;right:18px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:31;background:var(--accent);color:var(--accent-ink);border:0;border-radius:16px;padding:14px 18px;font:inherit;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.25);cursor:pointer;display:flex;gap:6px;align-items:center}
 #map{height:calc(100vh - 220px);min-height:360px;border-radius:12px;border:1px solid var(--line)}
 .legend{display:flex;gap:14px;font-size:13px;color:var(--muted);margin-bottom:10px;flex-wrap:wrap}
-#azResult,#faaResult{margin:0 0 10px;border-left:4px solid var(--line)}
-#azResult.az-in,#faaResult.az-in{border-left-color:#c0392b;background:rgba(192,57,43,.16);color:var(--text)}
-#azResult.az-near,#faaResult.az-near{border-left-color:#d98c00;background:rgba(217,140,0,.16);color:var(--text)}
-#azResult.az-ok,#faaResult.az-ok{border-left-color:#4f7a00;background:rgba(79,122,0,.16);color:var(--text)}
-#azResult.az-in::before,#faaResult.az-in::before{content:"🔴 "}
-#azResult.az-near::before,#faaResult.az-near::before{content:"🟠 "}
-#azResult.az-ok::before,#faaResult.az-ok::before{content:"🟢 "}
+#zResult,#azResult,#faaResult{margin:0 0 10px;border-left:4px solid var(--line)}
+#zResult.az-in,#azResult.az-in,#faaResult.az-in{border-left-color:#c0392b;background:rgba(192,57,43,.16);color:var(--text)}
+#zResult.az-near,#azResult.az-near,#faaResult.az-near{border-left-color:#d98c00;background:rgba(217,140,0,.16);color:var(--text)}
+#zResult.az-ok,#azResult.az-ok,#faaResult.az-ok{border-left-color:#4f7a00;background:rgba(79,122,0,.16);color:var(--text)}
+#zResult.az-in::before,#azResult.az-in::before,#faaResult.az-in::before{content:"🔴 "}
+#zResult.az-near::before,#azResult.az-near::before,#faaResult.az-near::before{content:"🟠 "}
+#zResult.az-ok::before,#azResult.az-ok::before,#faaResult.az-ok::before{content:"🟢 "}
 a.chip{text-decoration:none;display:inline-block}
 #faaLegend{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
 #faaLegend .dot{margin-left:6px}
@@ -153,6 +154,7 @@ ul.rules li{margin:6px 0}
   <div class="view" id="v-map">
     <div class="toolbar">
       <button class="chip" id="azToggle" data-t="azLayer">Airport zones</button>
+      <button class="chip" id="zToggle" data-t="zLayer">Chile P/R/D zones</button>
       <button class="chip" id="faaToggle" data-t="faaLayer">LAANC grid</button>
       <button class="chip" id="azCheck" data-t="azCheck">Check my spot</button>
     </div>
@@ -161,8 +163,12 @@ ul.rules li{margin:6px 0}
       <span><span class="dot" style="background:#9bd400"></span><span data-t="proAuth">Professional / approval</span></span>
       <span class="azLeg" hidden><span class="dot" style="background:#c0392b"></span><span data-t="azL8">8 km airport zone</span></span>
       <span class="azLeg" hidden><span class="dot" style="background:#d98c00"></span><span data-t="azL5">5 km aerodrome zone</span></span>
+      <span class="zLeg" hidden><span class="dot" style="background:#b0186e"></span><span data-t="zLP">Prohibited (P)</span></span>
+      <span class="zLeg" hidden><span class="dot" style="background:#7a3db8"></span><span data-t="zLR">Restricted (R)</span></span>
+      <span class="zLeg" hidden><span class="dot" style="background:#1f7fc4"></span><span data-t="zLD">Danger (D)</span></span>
       <span id="faaLegend" hidden></span>
     </div>
+    <div class="note" id="zResult" hidden></div>
     <div class="note" id="azResult" hidden></div>
     <div class="note" id="faaResult" hidden></div>
     <div class="toolbar" id="apRow" hidden style="margin:8px 0 10px">
