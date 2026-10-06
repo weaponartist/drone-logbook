@@ -49,6 +49,7 @@ const STR = {
     faaCell:(c, apt, cls, eff) => `LAANC grid: automatic approval up to ${c} ft AGL here (${apt}, Class ${cls}). You still must request authorization in a LAANC app before flying. FAA map effective ${eff}.`,
     faaZero:(apt, cls, eff) => `LAANC grid: 0 ft here (${apt}, Class ${cls}). No automatic approval. Part 107 pilots can ask the FAA for further coordination. FAA map effective ${eff}.`,
     faaNoGrid:'No LAANC grid square at this spot. That is not permission to fly: TFRs, parks and other restrictions are not in this layer. Check B4UFLY.',
+    apOpen:'Open AutoPylot', apCopy:'Copy coordinates', apCopied:'Copied ✓',
     azHint:'Tap the map to check any spot.', azZoom:'Zoom in to see airport zones. Tap the map to check any spot.',
     azLocating:'Finding your location…', azNoGps:'Could not get your location. Allow location access, or tap the map instead.',
     azNoData:'Airport data could not be loaded.', azNone:'No airport in the data near this spot (data covers Chile and the US only).',
@@ -105,6 +106,7 @@ const STR = {
     faaCell:(c, apt, cls, eff) => `Grilla LAANC: aprobación automática hasta ${c} ft AGL aquí (${apt}, Clase ${cls}). Igual debes pedir autorización en una app LAANC antes de volar. Mapa FAA vigente desde ${eff}.`,
     faaZero:(apt, cls, eff) => `Grilla LAANC: 0 ft aquí (${apt}, Clase ${cls}). Sin aprobación automática. Los pilotos Part 107 pueden pedir coordinación adicional a la FAA. Mapa FAA vigente desde ${eff}.`,
     faaNoGrid:'No hay cuadro de la grilla LAANC en este punto. Eso no es permiso para volar: TFR, parques y otras restricciones no están en esta capa. Revisa B4UFLY.',
+    apOpen:'Abrir AutoPylot', apCopy:'Copiar coordenadas', apCopied:'Copiado ✓',
     azHint:'Toca el mapa para revisar cualquier punto.', azZoom:'Acércate para ver las zonas de aeropuertos. Toca el mapa para revisar cualquier punto.',
     azLocating:'Buscando tu ubicación…', azNoGps:'No se pudo obtener tu ubicación. Permite el acceso a la ubicación o toca el mapa.',
     azNoData:'No se pudieron cargar los datos de aeropuertos.', azNone:'No hay ningún aeropuerto en los datos cerca de este punto (solo Chile y EE.UU.).',
@@ -482,7 +484,9 @@ function spotPin(lat, lon) {
 function spotCheck(lat, lon) {
   spotPin(lat, lon);
   if (azOn) azCheckAt(lat, lon);
-  if (faaOn) { if (lat > 10) faaCheckAt(lat, lon); else faaMsg('', ''); } // the FAA grid only covers the US and its territories
+  const us = faaOn && lat > 10; // the FAA grid only covers the US and its territories
+  if (us) { faaCheckAt(lat, lon); lastSpot = [lat, lon]; } else if (faaOn) faaMsg('', '');
+  $('#apRow').hidden = !us; // LAANC authorization happens in AutoPylot, not here
 }
 
 // ---------- FAA LAANC grid (UAS Facility Maps; FAA public data, US only) ----------
@@ -491,7 +495,7 @@ function spotCheck(lat, lon) {
 const FAA_URL = 'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/FAA_UAS_FacilityMap_Data/FeatureServer/0/query';
 const FAA_COLORS = { 0: '#c0392b', 50: '#e0562b', 100: '#e8832a', 150: '#eba72c', 200: '#e6c62e', 300: '#a9c93a', 400: '#5aa845' };
 const FAA_MAX = 2000; // the service's page size; a view that fills it is "too many squares"
-let faaOn = false, faaLayer, faaCanvas, faaCtl, faaTimer;
+let faaOn = false, faaLayer, faaCanvas, faaCtl, faaTimer, lastSpot = null;
 const faaColor = c => FAA_COLORS[c] ?? (c > 400 ? FAA_COLORS[400] : '#999');
 const faaQuery = (geom, type, extra) => FAA_URL + '?' + new URLSearchParams({
   where: '1=1', geometry: geom, geometryType: type, inSR: '4326', spatialRel: 'esriSpatialRelIntersects',
@@ -532,6 +536,7 @@ function faaSet(on) {
   faaOn = on; state.settings.faa = on; save();
   $('#faaToggle').classList.toggle('on', on);
   $('#faaLegend').hidden = !on;
+  if (!on) $('#apRow').hidden = true;
   if (!on && !azOn && azPin) { azPin.remove(); azPin = null; }
   faaRender();
   if (map) azRender(); // US rings hide while the grid is on
@@ -542,6 +547,12 @@ function faaInit() {
   faaLayer = L.layerGroup().addTo(map);
   $('#faaLegend').innerHTML = `${t('faaLeg')} ` + [0, 100, 200, 300, 400].map(c => `<span class="dot" style="background:${faaColor(c)}"></span>${c}`).join(' ');
   $('#faaToggle').onclick = () => faaSet(!faaOn);
+  $('#apCopy').onclick = async () => {
+    const b = $('#apCopy');
+    const xy = `${lastSpot[0].toFixed(5)}, ${lastSpot[1].toFixed(5)}`;
+    try { await navigator.clipboard.writeText(xy); b.textContent = t('apCopied'); } catch { b.textContent = xy; } // blocked: show them to copy by hand
+    setTimeout(() => { b.textContent = t('apCopy'); }, 4000);
+  };
   map.on('moveend', faaRender);
   map.whenReady(() => faaSet(!!state.settings.faa));
 }

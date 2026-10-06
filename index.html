@@ -87,6 +87,7 @@ h2.month{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(
 #azResult.az-in,#faaResult.az-in{border-left-color:#c0392b;color:var(--text)}
 #azResult.az-near,#faaResult.az-near{border-left-color:#d98c00;color:var(--text)}
 #azResult.az-ok,#faaResult.az-ok{border-left-color:#4f7a00;color:var(--text)}
+a.chip{text-decoration:none;display:inline-block}
 #faaLegend{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
 #faaLegend .dot{margin-left:6px}
 #azNote{margin:10px 0 0;font-size:12px}
@@ -161,6 +162,10 @@ ul.rules li{margin:6px 0}
     <div id="map"></div>
     <div class="note" id="azResult" hidden></div>
     <div class="note" id="faaResult" hidden></div>
+    <div class="toolbar" id="apRow" hidden style="margin:8px 0 0">
+      <a class="chip" id="apLink" href="https://app.autopylot.io" target="_blank" rel="noopener" data-t="apOpen">Open AutoPylot</a>
+      <button class="chip" id="apCopy" data-t="apCopy">Copy coordinates</button>
+    </div>
     <p class="note" id="azNote" data-t="azNote"></p>
   </div>
 
