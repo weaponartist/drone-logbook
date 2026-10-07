@@ -12,9 +12,9 @@ Object.assign(STR.en, {
   doc_insurance: 'Liability insurance policy', doc_kmz: 'KMZ file of the area (Google Earth)', doc_permission: "Owner's / manager's permission letter",
   file_kmz: 'KMZ file', file_permission: 'Permission letter', file_reply: 'DGAC reply', attach: 'Attach', open: 'Open',
   authExpSoon: (n, d) => `<b>Authorization ${n} expires in ${d} days.</b>`, authSendSoon: (p, d) => `<b>Send your DGAC request for "${p}" by ${d}.</b>`,
-  noAuths: 'No requests yet. Flying over a populated area? Start one at least 10 business days ahead.',
+  noAuths: 'No requests yet. Flying over a populated area? Start one at least 7 business days ahead.',
   linkAuth: 'DGAC authorization', authValidOn: 'valid on this date', authFlights: (n) => `${n} flight${n === 1 ? '' : 's'} logged under it`,
-  leadNote: 'Sources disagree on the notice period (7 or 10 business days); the app uses 10 to be safe.',
+  leadNote: 'Send the request at least 7 business days before the flight (DAN 91 Annex D; DAN 151 Appendix A). Chilean holidays are not counted here.',
   confirmDelAuth: 'Delete this request and its attached files?',
   authLate: (p) => `<b>"${p}": the usual DGAC notice period has passed.</b> Send it now and contact the DGAC, or move the flight date.`,
 });
@@ -29,14 +29,14 @@ Object.assign(STR.es, {
   doc_insurance: 'Póliza de seguro de responsabilidad civil', doc_kmz: 'Archivo KMZ del área (Google Earth)', doc_permission: 'Carta de permiso del dueño / administrador',
   file_kmz: 'Archivo KMZ', file_permission: 'Carta de permiso', file_reply: 'Respuesta DGAC', attach: 'Adjuntar', open: 'Abrir',
   authExpSoon: (n, d) => `<b>La autorización ${n} vence en ${d} días.</b>`, authSendSoon: (p, d) => `<b>Envía tu solicitud DGAC "${p}" antes del ${d}.</b>`,
-  noAuths: 'Aún no hay solicitudes. ¿Vas a volar sobre zona poblada? Empieza una con al menos 10 días hábiles de anticipación.',
+  noAuths: 'Aún no hay solicitudes. ¿Vas a volar sobre zona poblada? Empieza una con al menos 7 días hábiles de anticipación.',
   linkAuth: 'Autorización DGAC', authValidOn: 'vigente en esta fecha', authFlights: (n) => `${n} vuelo${n === 1 ? '' : 's'} registrado${n === 1 ? '' : 's'} con ella`,
-  leadNote: 'Las fuentes no coinciden en la anticipación (7 o 10 días hábiles); la app usa 10 por seguridad.',
+  leadNote: 'Envía la solicitud al menos 7 días hábiles antes del vuelo (DAN 91 Anexo D; DAN 151 Apéndice A). Aquí no se descuentan los feriados chilenos.',
   confirmDelAuth: '¿Eliminar esta solicitud y sus archivos adjuntos?',
   authLate: (p) => `<b>"${p}": ya pasó el plazo habitual de la DGAC.</b> Envíala ahora y contacta a la DGAC, o cambia la fecha del vuelo.`,
 });
 
-const AUTH_LEAD_DAYS = 10;
+const AUTH_LEAD_DAYS = 7;
 const AUTH_DOCS = ['form', 'registration', 'credential', 'insurance', 'kmz', 'permission'];
 const AUTH_FILES = ['kmz', 'permission', 'reply'];
 const auths = () => (state.auths ||= []);
