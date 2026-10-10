@@ -509,9 +509,14 @@ function azInit() {
   map.on('click', e => { if (azOn || faaOn || zOn || paOn) spotCheck(e.latlng.lat, e.latlng.lng); });
   map.whenReady(() => azSet(!!state.settings.az)); // zoom is only readable once the map has a view
 }
+// spot-check marker: a blue cross (white edge so it reads on satellite, roads and zone fills), not a dot like the flights
+// built lazily: Leaflet comes from a CDN, so it may be missing offline when app.js first runs
+let spotIcon;
+const SPOT_ICON_HTML = '<svg width="30" height="30" viewBox="0 0 30 30"><path d="M15 3v24M3 15h24" stroke="#fff" stroke-width="8" stroke-linecap="round"/><path d="M15 3v24M3 15h24" stroke="#1d6fd8" stroke-width="4" stroke-linecap="round"/></svg>';
 function spotPin(lat, lon) {
   if (azPin) azPin.remove();
-  azPin = L.circleMarker([lat, lon], { radius: 8, color: '#1d6fd8', weight: 3, fillColor: '#1d6fd8', fillOpacity: .35, bubblingMouseEvents: false }).addTo(map);
+  spotIcon ??= L.divIcon({ className: 'spot-cross', iconSize: [30, 30], iconAnchor: [15, 15], html: SPOT_ICON_HTML });
+  azPin = L.marker([lat, lon], { icon: spotIcon, interactive: false, keyboard: false }).addTo(map);
 }
 function spotCheck(lat, lon) {
   spotPin(lat, lon);
