@@ -63,6 +63,7 @@ const STR = {
     faaZero:(apt, cls, eff) => `LAANC grid: 0 ft here (${apt}, Class ${cls}). No automatic approval. Part 107 pilots can ask the FAA for further coordination. FAA map effective ${eff}.`,
     faaNoGrid:'No LAANC grid square at this spot. That is not permission to fly: TFRs, parks and other restrictions are not in this layer. Check B4UFLY.',
     apOpen:'Open AutoPylot', apCopy:'Copy coordinates', apCopied:'Copied ✓',
+    spotSave:'Save this spot', spotNew:'New saved spot', spotEdit:'Edit saved spot', spotName:'Name', spotNamePh:'e.g. Redland palms', spotLeg:'Saved spot', spotPick:'Saved spot', spotPickNone:'— none —', spotConfirmDel:'Delete this saved spot?',
     azHint:'Tap the map to check any spot.', azZoom:'Zoom in to see airport zones. Tap the map to check any spot.',
     azLocating:'Finding your location…', azNoGps:'Could not get your location. Allow location access, or tap the map instead.',
     azNoData:'Airport data could not be loaded.', azNone:'No airport in the data near this spot (data covers Chile and the US only).',
@@ -133,6 +134,7 @@ const STR = {
     faaZero:(apt, cls, eff) => `Grilla LAANC: 0 ft aquí (${apt}, Clase ${cls}). Sin aprobación automática. Los pilotos Part 107 pueden pedir coordinación adicional a la FAA. Mapa FAA vigente desde ${eff}.`,
     faaNoGrid:'No hay cuadro de la grilla LAANC en este punto. Eso no es permiso para volar: TFR, parques y otras restricciones no están en esta capa. Revisa B4UFLY.',
     apOpen:'Abrir AutoPylot', apCopy:'Copiar coordenadas', apCopied:'Copiado ✓',
+    spotSave:'Guardar este lugar', spotNew:'Nuevo lugar guardado', spotEdit:'Editar lugar guardado', spotName:'Nombre', spotNamePh:'ej. Palmas del Redland', spotLeg:'Lugar guardado', spotPick:'Lugar guardado', spotPickNone:'— ninguno —', spotConfirmDel:'¿Eliminar este lugar guardado?',
     azHint:'Toca el mapa para revisar cualquier punto.', azZoom:'Acércate para ver las zonas de aeropuertos. Toca el mapa para revisar cualquier punto.',
     azLocating:'Buscando tu ubicación…', azNoGps:'No se pudo obtener tu ubicación. Permite el acceso a la ubicación o toca el mapa.',
     azNoData:'No se pudieron cargar los datos de aeropuertos.', azNone:'No hay ningún aeropuerto en los datos cerca de este punto (solo Chile y EE.UU.).',
@@ -169,6 +171,7 @@ function load() {
 function migrate() {
   state.settings.country = state.settings.country || guessCountry();
   state.docs = state.docs || {};
+  state.spots = state.spots || [];
   if (!state.checklists) {
     const lang = state.settings.lang;
     state.checklists = { US: state.checklist || RULES.US.checklist[lang], CL: RULES.CL.checklist[lang] };
@@ -417,7 +420,43 @@ function renderList() {
   }
   $('#list').innerHTML = html;
 }
-let map, layer;
+let map, layer, spotLayer, mapFitted = false;
+// saved-spot icon: lime sacred geometry (hexagon + two interlocked triangles), the same motif as the WEAPONARTIST banner
+const SACRED_SVG = (size = 34) => `<svg width="${size}" height="${size}" viewBox="0 0 40 40" aria-hidden="true">
+  <circle cx="20" cy="20" r="18.5" fill="#11120e" stroke="#9bd400" stroke-opacity=".35" stroke-width="1"/>
+  <polygon points="20,5 33,12.5 33,27.5 20,35 7,27.5 7,12.5" fill="none" stroke="#9bd400" stroke-width="1.8" stroke-linejoin="round"/>
+  <polygon points="20,8.5 30.5,26.5 9.5,26.5" fill="none" stroke="#c6f24a" stroke-width="1.4" stroke-linejoin="round"/>
+  <polygon points="20,31.5 9.5,13.5 30.5,13.5" fill="none" stroke="#c6f24a" stroke-width="1.4" stroke-linejoin="round"/>
+  <circle cx="20" cy="20" r="2.2" fill="#9bd400"/></svg>`;
+let sacredIcon;
+function renderSpots() {
+  if (!spotLayer) return;
+  spotLayer.clearLayers();
+  sacredIcon ??= L.divIcon({ className: 'sacred-spot', iconSize: [34, 34], iconAnchor: [17, 17], popupAnchor: [0, -16], html: SACRED_SVG() });
+  for (const s of state.spots) {
+    const box = document.createElement('div');
+    box.innerHTML = `<b>${esc(s.name)}</b>${s.notes ? `<br>${esc(s.notes).replace(/\n/g, '<br>')}` : ''}<br><small>${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}</small><br>`;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn small'; b.style.marginTop = '6px'; b.textContent = t('spotEdit');
+    b.onclick = () => { map.closePopup(); spotDialog(s); };
+    box.append(b);
+    L.marker([s.lat, s.lng], { icon: sacredIcon, keyboard: false, bubblingMouseEvents: false, zIndexOffset: 500 }).bindPopup(box).addTo(spotLayer);
+  }
+}
+function spotDialog(s, lat, lng) {
+  const isNew = !s;
+  s = s || { name: '', notes: '', lat, lng };
+  openDialog(`<h3>${t(isNew ? 'spotNew' : 'spotEdit')}</h3>
+    <div style="text-align:center;margin:4px 0 8px">${SACRED_SVG(48)}</div>
+    <label>${t('spotName')}</label><input name="name" required placeholder="${esc(t('spotNamePh'))}" value="${esc(s.name)}">
+    <div class="grid2"><div><label>${t('lat')}</label><input name="lat" inputmode="decimal" required value="${s.lat ?? ''}"></div>
+      <div><label>${t('lng')}</label><input name="lng" inputmode="decimal" required value="${s.lng ?? ''}"></div></div>
+    <label>${t('notes')}</label><textarea name="notes">${esc(s.notes)}</textarea>`,
+  fd => {
+    Object.assign(s, { name: fd.get('name').trim(), notes: fd.get('notes').trim(), lat: +(+fd.get('lat')).toFixed(5), lng: +(+fd.get('lng')).toFixed(5) });
+    if (isNew) { s.id = uid(); state.spots.push(s); }
+  },
+  isNew ? null : () => { if (!confirm(t('spotConfirmDel'))) return false; state.spots = state.spots.filter(x => x.id !== s.id); return true; });
+}
 function renderMap() {
   if (!window.L) { $('#map').innerHTML = '<div class="empty">Map needs an internet connection.</div>'; return; }
   if (!map) {
@@ -427,6 +466,7 @@ function renderMap() {
     zLayer = L.layerGroup().addTo(map); // added first so airport rings and flight markers draw on top
     azLayer = L.layerGroup().addTo(map);
     layer = L.layerGroup().addTo(map);
+    spotLayer = L.layerGroup().addTo(map); // saved spots sit on top of the flight dots
     azInit();
     zInit();
     faaInit();
@@ -444,7 +484,13 @@ function renderMap() {
       .bindPopup(popup).addTo(layer);
     pts.push([f.lat, f.lng]);
   }
-  setTimeout(() => { map.invalidateSize(); if (pts.length) map.fitBounds(pts, { padding: [30, 30], maxZoom: 14 }); else map.setView(home() === 'CL' ? [-33.45, -70.66] : [25.65, -80.43], 10); }, 50);
+  renderSpots();
+  setTimeout(() => {
+    map.invalidateSize();
+    if (mapFitted) return; // only frame the flights once, so saving something doesn't yank the view away
+    mapFitted = true;
+    if (pts.length) map.fitBounds(pts, { padding: [30, 30], maxZoom: 14 }); else map.setView(home() === 'CL' ? [-33.45, -70.66] : [25.65, -80.43], 10);
+  }, 50);
 }
 
 // ---------- airport zones (informational only; data: OurAirports, public domain) ----------
@@ -506,7 +552,8 @@ function azInit() {
     }, () => azMsg('', t('azNoGps')), { enableHighAccuracy: true, timeout: 10000 });
   };
   map.on('moveend', azRender);
-  map.on('click', e => { if (azOn || faaOn || zOn || paOn) spotCheck(e.latlng.lat, e.latlng.lng); });
+  map.on('click', e => spotCheck(e.latlng.lat, e.latlng.lng)); // the zone checks inside only run for layers that are on
+  $('#spotSave').onclick = () => tapSpot && spotDialog(null, +tapSpot[0].toFixed(5), +tapSpot[1].toFixed(5));
   map.whenReady(() => azSet(!!state.settings.az)); // zoom is only readable once the map has a view
 }
 // spot-check marker: a blue cross (white edge so it reads on satellite, roads and zone fills), not a dot like the flights
@@ -518,8 +565,10 @@ function spotPin(lat, lon) {
   spotIcon ??= L.divIcon({ className: 'spot-cross', iconSize: [30, 30], iconAnchor: [15, 15], html: SPOT_ICON_HTML });
   azPin = L.marker([lat, lon], { icon: spotIcon, interactive: false, keyboard: false }).addTo(map);
 }
+let tapSpot = null; // last tapped / GPS spot, offered for saving
 function spotCheck(lat, lon) {
   spotPin(lat, lon);
+  tapSpot = [lat, lon]; $('#spotRow').hidden = false;
   if (zOn) zCheckAt(lat, lon);
   if (paOn) paCheckAt(lat, lon);
   if (azOn) azCheckAt(lat, lon);
@@ -830,6 +879,7 @@ function flightDialog(f) {
       <div><label>${t('drone')}</label><select name="droneId">${opt('', t('none'), !f.droneId)}${state.drones.map(d => opt(d.id, d.name, d.id === f.droneId)).join('')}</select></div></div>
     <label>${t('status')}</label><select name="status">${opt('', t('flown'), flown(f))}${opt('cancelled', t('notFlown'), !flown(f))}</select>
     <label>${t('purpose')}</label><input name="name" value="${esc(f.name)}">
+    ${state.spots.length ? `<label>${t('spotPick')}</label><select id="spotPick">${opt('', t('spotPickNone'), true)}${state.spots.map(sp => opt(sp.id, sp.name, false)).join('')}</select>` : ''}
     <label>${t('location')}</label><input name="location" value="${esc(f.location)}">
     <div class="grid2"><div><label>${t('lat')}</label><input name="lat" inputmode="decimal" value="${f.lat ?? ''}"></div>
       <div><label>${t('lng')}</label><input name="lng" inputmode="decimal" value="${f.lng ?? ''}"></div></div>
@@ -863,6 +913,8 @@ function flightDialog(f) {
   },
   isNew ? null : () => { if (!confirm(t('confirmDel'))) return false; state.flights = state.flights.filter(x => x.id !== f.id); return true; });
   const nf = $('#markNF'); if (nf) nf.onclick = () => { form.status.value = 'cancelled'; form.requestSubmit(); };
+  const sp = $('#spotPick');
+  if (sp) sp.onchange = () => { const x = state.spots.find(y => y.id === sp.value); if (x) { form.location.value = x.name; form.lat.value = x.lat; form.lng.value = x.lng; } };
   $('#gps').onclick = () => navigator.geolocation?.getCurrentPosition(p => {
     form.lat.value = p.coords.latitude.toFixed(5); form.lng.value = p.coords.longitude.toFixed(5);
   });
