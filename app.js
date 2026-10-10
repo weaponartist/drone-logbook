@@ -436,9 +436,12 @@ function renderMap() {
   for (const f of state.flights) {
     if (f.lat == null) continue;
     const isL = !!f.laanc || f.type === 'Part 107';
-    L.circleMarker([f.lat, f.lng], { radius: isL ? 9 : 7, color: isL ? '#4f7a00' : '#3d4740', weight: 2, fillColor: isL ? '#9bd400' : '#7c8a80', fillOpacity: .85, bubblingMouseEvents: false })
-      .bindPopup(`<b>${esc(new Date(f.start).toLocaleDateString(loc(), { dateStyle: 'medium' }))}</b><br>${esc(f.location)}${f.laanc ? `<br>${ruleOf(f).authShort} ${esc(f.laanc)}` : ''}`)
+    const popup = `<b>${esc(new Date(f.start).toLocaleDateString(loc(), { dateStyle: 'medium' }))}</b><br>${esc(f.location)}${f.laanc ? `<br>${ruleOf(f).authShort} ${esc(f.laanc)}` : ''}<br><small>${f.lat.toFixed(5)}, ${f.lng.toFixed(5)}</small>`;
+    L.circleMarker([f.lat, f.lng], { radius: isL ? 9 : 7, color: isL ? '#4f7a00' : '#3d4740', weight: 2, fillColor: isL ? '#9bd400' : '#7c8a80', fillOpacity: .85, bubblingMouseEvents: false, interactive: false })
       .addTo(layer);
+    // invisible, finger-sized hit area on top of the dot, so a tap opens the flight instead of dropping a spot-check pin
+    L.circleMarker([f.lat, f.lng], { radius: 20, stroke: false, fillColor: '#000', fillOpacity: 0.001, bubblingMouseEvents: false })
+      .bindPopup(popup).addTo(layer);
     pts.push([f.lat, f.lng]);
   }
   setTimeout(() => { map.invalidateSize(); if (pts.length) map.fitBounds(pts, { padding: [30, 30], maxZoom: 14 }); else map.setView(home() === 'CL' ? [-33.45, -70.66] : [25.65, -80.43], 10); }, 50);
