@@ -1,6 +1,6 @@
 // Network-first with cache fallback so the logbook opens offline in the field.
-const CACHE = 'dlb-v15';
-const SHELL = ['./', 'index.html', 'app.js', 'rules.js', 'auths.js', 'manifest.webmanifest', 'icon.svg', 'icon-180.png', 'icon-512.png', 'vendor/dji_log_parser_js.mjs', 'geo/airports.json', 'geo/cl-zones.json'];
+const CACHE = 'dlb-v16';
+const SHELL = ['./', 'index.html', 'app.js', 'rules.js', 'auths.js', 'pixel-me.js', 'manifest.webmanifest', 'icon.svg', 'icon-180.png', 'icon-512.png', 'vendor/dji_log_parser_js.mjs', 'geo/airports.json', 'geo/cl-zones.json'];
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', e => {

@@ -830,7 +830,7 @@ function docDialog(key) {
 }
 function welcomeDialog() {
   const opt = (v, l, sel) => `<option value="${v}" ${sel ? 'selected' : ''}>${esc(l)}</option>`;
-  openDialog(`<h3>${t('welcome')} 👋</h3><p class="note" style="margin:0">${esc(t('welcomeText'))}</p>
+  openDialog(`<div class="welcome-head"><canvas id="meSprite" class="me-sprite" role="img" aria-label="Pixel-art pilot"></canvas><h3>${t('welcome')} 👋</h3></div><p class="note" style="margin:0">${esc(t('welcomeText'))}</p>
     <label>${t('pilot')}</label><input name="pilot" value="${esc(state.settings.pilot)}">
     <div class="grid2"><div><label>${t('country')}</label><select name="country">${Object.entries(RULES).map(([k, r]) => opt(k, `${r.flag} ${L10(r.name)}`, k === home())).join('')}</select></div>
       <div><label>${t('language')}</label><select name="lang">${opt('es', 'Español', state.settings.lang === 'es')}${opt('en', 'English', state.settings.lang === 'en')}</select></div></div>
@@ -843,6 +843,7 @@ function welcomeDialog() {
     state.welcomed = true;
   });
   $('#dCancel').onclick = () => { state.welcomed = true; save(); dlg.close(); };
+  if (window.mountMe) mountMe($('#meSprite'));
 }
 function renderAll() {
   applyI18n();
