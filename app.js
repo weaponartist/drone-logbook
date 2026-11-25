@@ -4,7 +4,7 @@ const KEY = 'dlb.v1';
 // ---------- i18n ----------
 const STR = {
   en: {
-    appName:'Drone Logbook', tabLog:'Log', tabMap:'Map', tabFleet:'Fleet', tabMore:'More',
+    appName:'Drone Logbook', nightMode:'Night mode', tabLog:'Log', tabMap:'Map', tabFleet:'Fleet', tabMore:'More',
     logFlight:'Log flight', flights:'Flights', thisYear:'This year', airtime:'Logged air time',
     laanc:'LAANC approvals', all:'All', recreational:'Recreational', part107:'Part 107',
     airMissing:'no air time', min:'min', drones:'Drones', batteries:'Batteries',
@@ -75,7 +75,7 @@ const STR = {
     azClearUS:(n, c, km, d) => `Outside this app's approximate ring, but that does not mean clear. Class B/C/D airspace can reach well past 5 mi and is not shown. Nearest: ${n} (${c}), ${d} km. Check B4UFLY/LAANC before flying.`,
   },
   es: {
-    appName:'Bitácora de Vuelo', tabLog:'Bitácora', tabMap:'Mapa', tabFleet:'Flota', tabMore:'Más',
+    appName:'Bitácora de Vuelo', nightMode:'Modo noche', tabLog:'Bitácora', tabMap:'Mapa', tabFleet:'Flota', tabMore:'Más',
     logFlight:'Registrar vuelo', flights:'Vuelos', thisYear:'Este año', airtime:'Tiempo de vuelo',
     laanc:'Autorizaciones LAANC', all:'Todos', recreational:'Recreativo', part107:'Part 107',
     airMissing:'sin tiempo', min:'min', drones:'Drones', batteries:'Baterías',
@@ -375,6 +375,7 @@ function applyI18n() {
   document.querySelectorAll('[data-t]').forEach(el => el.textContent = t(el.dataset.t));
   document.querySelectorAll('[data-tp]').forEach(el => el.placeholder = t(el.dataset.tp));
   document.title = t('appName');
+  const nb = document.getElementById('nightBtn'); if (nb) { nb.title = t('nightMode'); nb.setAttribute('aria-label', t('nightMode')); }
 }
 function renderStats() {
   const fl = state.flights.filter(flown);
@@ -477,7 +478,7 @@ function renderMap() {
     if (f.lat == null) continue;
     const isL = !!f.laanc || f.type === 'Part 107';
     const popup = `<b>${esc(new Date(f.start).toLocaleDateString(loc(), { dateStyle: 'medium' }))}</b><br>${esc(f.location)}${f.laanc ? `<br>${ruleOf(f).authShort} ${esc(f.laanc)}` : ''}<br><small>${f.lat.toFixed(5)}, ${f.lng.toFixed(5)}</small>`;
-    L.circleMarker([f.lat, f.lng], { radius: isL ? 9 : 7, color: isL ? '#4f7a00' : '#3d4740', weight: 2, fillColor: isL ? '#9bd400' : '#7c8a80', fillOpacity: .85, bubblingMouseEvents: false, interactive: false })
+    L.circleMarker([f.lat, f.lng], { radius: isL ? 9 : 7, color: isL ? '#4f7a00' : '#3d4740', weight: 2, fillColor: isL ? '#9bd400' : '#7c8a80', fillOpacity: .85, className: isL ? 'fl-pro' : 'fl-rec', bubblingMouseEvents: false, interactive: false })
       .addTo(layer);
     // invisible, finger-sized hit area on top of the dot, so a tap opens the flight instead of dropping a spot-check pin
     L.circleMarker([f.lat, f.lng], { radius: 20, stroke: false, fillColor: '#000', fillOpacity: 0.001, bubblingMouseEvents: false })
@@ -980,6 +981,17 @@ function printLog() {
 
 // ---------- wiring ----------
 let current = 'log';
+// Night mode (red on black). Kept apart from the logbook data so backups don't carry it.
+function setNight(on) {
+  const root = document.documentElement;
+  if (on) root.dataset.theme = 'night'; else delete root.dataset.theme;
+  document.getElementById('nightBtn').setAttribute('aria-pressed', on ? 'true' : 'false');
+  document.querySelector('meta[name=theme-color]').content = on ? '#000000' : '#0f1412';
+  try { localStorage.setItem('dlb-theme', on ? 'night' : ''); } catch {}
+}
+setNight(document.documentElement.dataset.theme === 'night');
+document.getElementById('nightBtn').onclick = () => setNight(document.documentElement.dataset.theme !== 'night');
+
 document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => {
   current = b.dataset.view;
   document.querySelectorAll('nav.tabs button').forEach(x => x.classList.toggle('on', x === b));

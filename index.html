@@ -20,6 +20,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Bitácora">
+<script>try{if(localStorage.getItem('dlb-theme')==='night'){document.documentElement.dataset.theme='night';document.querySelector('meta[name=theme-color]').content='#000000'}}catch(e){}</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
@@ -40,6 +41,34 @@
   --line:#2a332d; --accent:#c6f432; --accent-ink:#121a00; --warn:#f5a524; --danger:#ff6b5e;
   --laanc-bg:#26340c; --laanc-ink:#d8f77a;
 }
+/* Night mode: red on black, keeps night vision (NOCTVRN-style HUD). Toggled by the moon button. */
+:root[data-theme="night"]{
+  --bg:#000000; --surface:#0b0302; --surface-2:#170604; --text:#ff5a3a; --muted:#c9472b;
+  --line:#3b1209; --accent:#ff3b1f; --accent-ink:#000000; --lime:#ff3b1f; --warn:#ff9a3c; --danger:#ff2d2d;
+  --laanc-bg:#2a0b05; --laanc-ink:#ff7a55;
+}
+:root[data-theme="night"] header h1,
+:root[data-theme="night"] h2.month,
+:root[data-theme="night"] nav.tabs button,
+:root[data-theme="night"] section.box h3{font-family:"JetBrains Mono",ui-monospace,monospace;text-transform:uppercase;letter-spacing:.08em}
+:root[data-theme="night"] header h1{font-size:15px;text-shadow:0 0 10px rgba(255,59,31,.45)}
+:root[data-theme="night"] .stat .v,:root[data-theme="night"] .air .v,:root[data-theme="night"] .date .d{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:500}
+:root[data-theme="night"] .fab{box-shadow:0 0 22px rgba(255,59,31,.35)}
+:root[data-theme="night"] .leaflet-tile-pane{filter:grayscale(1) invert(1) brightness(.62) contrast(1.25) sepia(1) saturate(7) hue-rotate(-28deg)}
+:root[data-theme="night"] .leaflet-container{background:#000}
+:root[data-theme="night"] .sacred-spot svg,:root[data-theme="night"] .sacred-leg{filter:hue-rotate(-80deg) saturate(1.6)}
+:root[data-theme="night"] img,:root[data-theme="night"] .me-sprite{filter:grayscale(1) sepia(1) saturate(5) hue-rotate(-30deg) brightness(.85)}
+:root[data-theme="night"] path.fl-rec{stroke:#7a2412;fill:#b8401f}
+:root[data-theme="night"] path.fl-pro{stroke:#ff3b1f;fill:#ff6a3d}
+:root[data-theme="night"] .fl-rec-dot{background:#b8401f!important}
+:root[data-theme="night"] .fl-pro-dot{background:#ff6a3d!important}
+:root[data-theme="night"] .leaflet-bar a,:root[data-theme="night"] .leaflet-control-attribution{background:#0b0302;color:#ff5a3a;border-color:#3b1209}
+:root[data-theme="night"] .leaflet-control-attribution a{color:#ff5a3a}
+:root[data-theme="night"] .leaflet-popup-content-wrapper,:root[data-theme="night"] .leaflet-popup-tip{background:#0b0302;color:#ff5a3a;border:1px solid #3b1209}
+:root[data-theme="night"] ::selection{background:#ff3b1f;color:#000}
+.night-btn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:99px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer;padding:0;flex:none}
+.night-btn svg{width:17px;height:17px}
+.night-btn[aria-pressed="true"]{color:var(--accent);border-color:var(--accent);box-shadow:0 0 10px rgba(255,59,31,.4)}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;font-size:15px;-webkit-text-size-adjust:100%}
 .mono{font-family:"JetBrains Mono",ui-monospace,monospace}
@@ -147,6 +176,7 @@ ul.rules li{margin:6px 0}
 <header>
   <h1 data-t="appName">Drone Logbook</h1>
   <span class="pilot" id="pilotName"></span>
+  <button class="night-btn" id="nightBtn" type="button" aria-pressed="false" title="Night mode" aria-label="Night mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
 </header>
 
 <main>
@@ -166,8 +196,8 @@ ul.rules li{margin:6px 0}
       <button class="chip" id="azCheck" data-t="azCheck">Check my spot</button>
     </div>
     <div class="legend">
-      <span><span class="dot" style="background:#7c8a80"></span><span data-t="recreational">Recreational</span></span>
-      <span><span class="dot" style="background:#9bd400"></span><span data-t="proAuth">Professional / approval</span></span>
+      <span><span class="dot fl-rec-dot" style="background:#7c8a80"></span><span data-t="recreational">Recreational</span></span>
+      <span><span class="dot fl-pro-dot" style="background:#9bd400"></span><span data-t="proAuth">Professional / approval</span></span>
       <span><span class="sacred-leg"></span><span data-t="spotLeg">Saved spot</span></span>
       <span class="azLeg" hidden><span class="dot" style="background:#c0392b"></span><span data-t="azL8">8 km airport zone</span></span>
       <span class="azLeg" hidden><span class="dot" style="background:#d98c00"></span><span data-t="azL5">5 km aerodrome zone</span></span>
